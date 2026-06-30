@@ -18,32 +18,84 @@ struct ContentView: View {
 //        animation: .default)
 //    private var items: FetchedResults<Item>
 
+    let backgroundGradient = LinearGradient(
+        colors: [Color.white, Color.gray],
+        startPoint: .top, endPoint: .bottom
+    )
+    
     var body: some View {
-        VStack(alignment: .leading) {
-            if UserDefaults.standard.hasLaunchedBefore {
-                Text("Prior fractal here")
-            } else {
-                Group {
-                    if let renderedImage = renderModel.newImage {
-                        renderedImage
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        ProgressView("Rendering",
-                                     value: renderModel.renderingProgress,
-                                     total: 1.0
-                        )
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .frame(width: 200, height: 200)
+        ZStack {
+            backgroundGradient
+                .ignoresSafeArea() // Forces color to fill the top/bottom edges
+
+            VStack(alignment: .leading) {
+                if UserDefaults.standard.hasLaunchedBefore {
+                    Text("Prior fractal here")
+                } else {
+                    Group {
+                        if let renderedImage = renderModel.newImage {
+                            renderedImage
+                                .resizable()
+                                .scaledToFit()
+                        } else {
+                            ProgressView("Rendering",
+                                         value: renderModel.renderingProgress,
+                                         total: 1.0
+                            )
+                            .padding()
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(10)
+                            .frame(width: 200, height: 200)
+                        }
+                    }
+                    .task {
+                        await renderModel.startRendering()
                     }
                 }
-                .task {
-                    await renderModel.startRendering()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Attach the custom overlay toolbar
+            .overlay(alignment: .bottomTrailing) {
+                if !renderModel.isRendering {
+                    floatingToolbar
                 }
             }
         }
+    }
+    
+    private var floatingToolbar: some View {
+        VStack(alignment: .leading) {
+            Button(action: { print("Model") }) {
+                Image(systemName: "globe")
+            }
+            .padding(.bottom, 5)
+            
+            Button(action: { print("Pallete") }) {
+                Image(systemName: "swatchpalette.fill")
+            }
+            .padding(.bottom, 5)
+
+            Button(action: { print("Bookmark") }) {
+                Image(systemName: "bookmark.fill")
+            }
+            .padding(.bottom, 5)
+            
+            Button(action: { print("Save") }) {
+                Image(systemName: "photo.badge.arrow.down.fill")
+            }
+            .padding(.bottom, 5)
+            
+            Button(action: { print("Settings") }) {
+                Image(systemName: "gearshape.2.fill")
+            }
+        }
+        .font(.title2)
+        .padding(.horizontal, 25)
+        .padding(.vertical, 15)
+        .background(.ultraThinMaterial) // Gives a blur effect overlaying content
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+        .padding([.bottom, .trailing], 10) // Push it slightly away from the screen edge
     }
 }
 

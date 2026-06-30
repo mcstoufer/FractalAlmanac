@@ -53,7 +53,7 @@ extension Palette {
     
     func colorScheme() -> [UInt32] {
         var pallete = [UInt32]()
-        var colors  = [Color]()
+        var colors  = [PalleteColor]()
         switch self {
             case .Vibrant:
                 colors = [.white, .magenta, .fuscia, .red,
@@ -81,7 +81,7 @@ extension Palette {
                 
             case .Random:
                 for _ in 0..<15 {
-                    colors.append(Color.random())
+                    colors.append(PalleteColor.random())
                 }
                 colors.append(.black)
                 

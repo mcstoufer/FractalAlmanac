@@ -8,7 +8,7 @@
 import UIKit
 
 
-enum Color: UInt32, CaseIterable { // All 4 bytes long with full opacity
+enum PalleteColor: UInt32, CaseIterable { // All 4 bytes long with full opacity
     case white   = 4294967295 // 0xFFFFFFFF
     case magenta = 4278255615
     case fuscia  = 4278223103
@@ -82,21 +82,21 @@ enum Color: UInt32, CaseIterable { // All 4 bytes long with full opacity
     case black         = 255   // 0x000000FF
     case clear         = 0     // 0x00000000
     
-    static func allColorsSorted() -> [Color] {
-        return  Color.allCases.sorted(by: { $0.rawValue.hue < $1.rawValue.hue} )
+    static func allColorsSorted() -> [PalleteColor] {
+        return  PalleteColor.allCases.sorted(by: { $0.rawValue.hue < $1.rawValue.hue} )
     }
     
-    static func random<G: RandomNumberGenerator>(using generator: inout G) -> Color {
-        let color = Color.allCases.randomElement(using: &generator)!
+    static func random<G: RandomNumberGenerator>(using generator: inout G) -> PalleteColor {
+        let color = PalleteColor.allCases.randomElement(using: &generator)!
         if color == .clear {
-            return Color.random(using: &generator)
+            return PalleteColor.random(using: &generator)
         }
         return color
     }
     
-    static func random() -> Color {
+    static func random() -> PalleteColor {
         var g = SystemRandomNumberGenerator()
-        return Color.random(using: &g)
+        return PalleteColor.random(using: &g)
     }
     
     var uiColor: UIColor {
