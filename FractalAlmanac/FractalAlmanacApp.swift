@@ -11,11 +11,16 @@ import CoreData
 @main
 struct FractalAlmanacApp: App {
     let persistenceController = PersistenceController.shared
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            if hasSeenOnboarding {
+                ContentView()
+                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            } else {
+                InfoDisplay()
+            }
         }
     }
 }
