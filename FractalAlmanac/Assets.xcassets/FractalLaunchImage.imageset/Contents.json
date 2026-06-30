@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "FractalLaunchImage.png",
+      "idiom" : "ipad"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
