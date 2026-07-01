@@ -12,12 +12,18 @@ import SwiftUI
 @objc(ColorScheme)
 class ColorScheme: NSManagedObject, ColorSchemeProtocol {
 
-    func colorSchemeName() -> String {
+    var paletteName: String {
         return self.name!
     }
     
-    func colorSchemeColors() -> [UInt32] {
+    func schemeColors() -> [UInt32] {
         return self.colors!
+    }
+    
+    func schemeSystemColors() -> [Color] {
+        return self.colors!.map { color in
+            color.systemColor
+        }
     }
     
     func colorSchemeFilter() -> RenderingFilter {

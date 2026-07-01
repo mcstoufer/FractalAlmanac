@@ -1,12 +1,16 @@
 //
-//  Palette.swift
+//  PaletteDataModel.swift
 //  FractalAlmanac
 //
 //  Created by Dragon Admin on 6/29/26.
 //
 
+import SwiftUI
 
-enum Palette:String, CaseIterable, ColorSchemeProtocol {
+
+enum Palette:String, CaseIterable, ColorSchemeProtocol, Identifiable {
+    var id: Self { self }
+    
     case Vibrant = "Vibrant"
     case Verdant = "Verdant"
     case Fire = "Fire"
@@ -27,12 +31,18 @@ enum PaletteStyle: String, CaseIterable {
 
 extension Palette {
 
-    func colorSchemeName() -> String {
+    var paletteName: String {
         return rawValue
     }
     
-    func colorSchemeColors() -> [UInt32] {
+    func schemeColors() -> [UInt32] {
         return colorScheme()
+    }
+    
+    func schemeSystemColors() -> [Color] {
+        return colorScheme().map { color in
+            color.systemColor
+        }
     }
     
     func colorSchemeFilter() -> RenderingFilter {

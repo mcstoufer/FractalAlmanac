@@ -5,6 +5,8 @@
 //  Created by Dragon Admin on 6/29/26.
 //
 
+import SwiftUI
+
 enum RenderingFilter:Int {
     case Glow=0
     case Blur
@@ -12,7 +14,8 @@ enum RenderingFilter:Int {
 }
 
 protocol ColorSchemeProtocol {
-    func colorSchemeName() -> String
-    func colorSchemeColors() -> [UInt32]
+    var paletteName: String { get }
+    func schemeColors() -> [UInt32]
+    func schemeSystemColors() -> [Color]
     func colorSchemeFilter() -> RenderingFilter
 }

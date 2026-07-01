@@ -47,7 +47,7 @@ extension UserDefaults {
             return pr
         }
         set(newPalette) {
-            UserDefaults.standard.set(newPalette.colorSchemeName(), forKey: kLastSelectedPalette)
+            UserDefaults.standard.set(newPalette.paletteName, forKey: kLastSelectedPalette)
         }
     }
 }

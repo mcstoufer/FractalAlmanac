@@ -42,7 +42,7 @@ final class MandelbrotDataModel: FractalDataModel {
             }
         }
         
-        let colorCount = colorPalette.colorSchemeColors().count
+        let colorCount = colorPalette.schemeColors().count
         for col in 0..<Int(bufferSize.width) {
             for row in 0..<Int(bufferSize.height) {
                 X = 0

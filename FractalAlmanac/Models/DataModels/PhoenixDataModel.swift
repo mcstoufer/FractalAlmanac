@@ -36,7 +36,7 @@ final class PhoenixDataModel: JuliaDataModel {
         pixelData.removeAll()
         wideBuffer = [Data](repeating: Data(), count: Int(bufferSize.width))
         
-        let colorCount = colorPalette.colorSchemeColors().count
+        let colorCount = colorPalette.schemeColors().count
         let colorStep = Double(maxIters)/Double(colorCount).rounded(.awayFromZero)
         
         for col in 0..<Int(bufferSize.width) {

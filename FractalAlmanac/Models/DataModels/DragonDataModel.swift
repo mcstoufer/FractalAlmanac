@@ -35,7 +35,7 @@ final class DragonDataModel: JuliaDataModel {
         let deltaX = (currentExtent.XMax - currentExtent.XMin)/Double(bufferSize.width)
         let deltaY = (currentExtent.YMax - currentExtent.YMin)/Double(bufferSize.height)
         
-        let colorCount = colorPalette.colorSchemeColors().count
+        let colorCount = colorPalette.schemeColors().count
         for col in 0..<Int(bufferSize.width) {
             for row in 0..<Int(bufferSize.height) {
                 X = currentExtent.XMin + Double(col) * deltaX

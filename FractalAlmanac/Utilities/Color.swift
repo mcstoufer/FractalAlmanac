@@ -9,6 +9,7 @@ import UIKit
 
 
 enum PalleteColor: UInt32, CaseIterable { // All 4 bytes long with full opacity
+    // R G B A
     case white   = 4294967295 // 0xFFFFFFFF
     case magenta = 4278255615
     case fuscia  = 4278223103

@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject var renderModel = RenderModel()
     @State private var renderedImage: Image? = nil
+    @State private var isShowingModal: Bool = false
     
     //    @FetchRequest(
 //        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
@@ -66,14 +67,19 @@ struct ContentView: View {
     private var floatingToolbar: some View {
         VStack(alignment: .leading) {
             Button(action: { print("Model") }) {
-                Image(systemName: "globe")
+                Image(systemName: "map.fill")
             }
             .padding(.bottom, 5)
             
-            Button(action: { print("Pallete") }) {
+            Button(action: {
+                isShowingModal.toggle()
+            }) {
                 Image(systemName: "swatchpalette.fill")
             }
             .padding(.bottom, 5)
+            .sheet(isPresented: $isShowingModal) {
+                PalettePicker(paletteDelegate: renderModel)
+            }
 
             Button(action: { print("Bookmark") }) {
                 Image(systemName: "bookmark.fill")

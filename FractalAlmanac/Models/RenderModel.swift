@@ -10,7 +10,7 @@ internal import Combine
 import SwiftUI
 
 
-class RenderModel: ObservableObject, DataModelRenderProtocol {
+class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol {
     @Published var isRendering = false
     @Published var renderingProgress:Float = 0.0
     @Published var newImage: Image? = nil
@@ -26,7 +26,7 @@ class RenderModel: ObservableObject, DataModelRenderProtocol {
     )
 
 //    private var pastImages = [UIImage]()
-//    private var currentPallete:ColorSchemeProtocol?
+    private var currentPallete:ColorSchemeProtocol?
 //    private var currentModel:FractalModelFactory?
     private var minExtent:CGFloat {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return 0 }
@@ -108,5 +108,20 @@ class RenderModel: ObservableObject, DataModelRenderProtocol {
     
     func extentsHaveRefreshed() async {
         await startRendering()
+    }
+    
+    // MARK: - PaletteProtocol
+    func palleteSelectionDidChange(p: any ColorSchemeProtocol) {
+        currentPallete = p
+        renderingProgress = 0.0
+        dataModel.setNewPallete(p: p)
+        self.newImage = nil
+        Task {
+            await startRendering()
+        }
+    }
+    
+    func lastSelectedPallete() -> (any ColorSchemeProtocol)? {
+        return nil
     }
 }

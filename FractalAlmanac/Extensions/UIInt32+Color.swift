@@ -6,16 +6,26 @@
 //
 
 import UIKit
+import SwiftUI
 
 
 extension UInt32 {
     var uiColor: UIColor {
-        let red = (CGFloat) ( (self>>24)&0xFF )
-        let green = (CGFloat) ( (self>>16)&0xFF )
-        let blue = (CGFloat) ( (self>>8)&0xFF )
-        let alpha = (CGFloat) ( (self)&0xff)
+        let red = (CGFloat) ( (self>>24)&0xFF ) / 255.0
+        let green = (CGFloat) ( (self>>16)&0xFF ) / 255.0
+        let blue = (CGFloat) ( (self>>8)&0xFF ) / 255.0
+        let alpha = (CGFloat) ( (self)&0xff) / 255.0
         
-        return UIColor(red: red/255, green: green/255, blue: blue/255, alpha: alpha)
+        return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+    }
+    
+    var systemColor: Color {
+        let red = (CGFloat) ( (self>>24)&0xFF ) / 255.0
+        let green = (CGFloat) ( (self>>16)&0xFF ) / 255.0
+        let blue = (CGFloat) ( (self>>8)&0xFF ) / 255.0
+        let alpha = (CGFloat) ( (self)&0xff) / 255.0
+
+        return Color(red: red, green: green, blue: blue, opacity: alpha)
     }
     
     var hue: Int {

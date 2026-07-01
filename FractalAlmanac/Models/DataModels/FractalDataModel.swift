@@ -41,7 +41,7 @@ class FractalDataModel: DataModelProtocol {
         renderingListener = listener
         rendering = false
         
-        populateColorScheme(colors: UserDefaults.standard.lastSelectedPalette.colorSchemeColors())
+        populateColorScheme(colors: UserDefaults.standard.lastSelectedPalette.schemeColors())
         configureDefaultExtents()
     }
     
@@ -60,7 +60,7 @@ class FractalDataModel: DataModelProtocol {
     
     func setNewPallete(p: ColorSchemeProtocol) {
         colorPalette = p
-        populateColorScheme(colors: p.colorSchemeColors())
+        populateColorScheme(colors: p.schemeColors())
     }
     
     func populateColorScheme(colors:[UInt32]) {
