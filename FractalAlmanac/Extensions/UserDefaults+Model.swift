@@ -21,12 +21,12 @@ extension UserDefaults {
         }
     }
     
-    var lastSelectedModel: FractalModelFactory {
+    var lastSelectedModel: FractalModel {
         get {
             guard let f = UserDefaults.standard.string(forKey: kLastSelectedModel) else {
                 return .Mandelbrot
             }
-            guard let pr = FractalModelFactory(rawValue: f) else {
+            guard let pr = FractalModel(rawValue: f) else {
                 return .Mandelbrot
             }
             return pr

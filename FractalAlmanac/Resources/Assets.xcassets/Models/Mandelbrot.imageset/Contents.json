@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "Mandelbrot.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

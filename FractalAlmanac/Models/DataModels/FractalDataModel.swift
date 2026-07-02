@@ -23,7 +23,7 @@ class FractalDataModel: DataModelProtocol {
             rendering == true ? renderingListener?.renderingHasBegun() : renderingListener?.renderingHasEnded()
         }
     }
-    var model = FractalModelFactory.Mandelbrot
+    var model: FractalModel = .Mandelbrot
     
     weak var renderingListener:DataModelRenderProtocol?
     

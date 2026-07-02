@@ -8,7 +8,9 @@
 import Foundation
 import UIKit
 
-enum FractalModelFactory: String, CaseIterable {
+enum FractalModel: String, CaseIterable, Identifiable {
+    var id: Self { self }
+
     case Mandelbrot = "Mandelbrot"
     case JuliaA = "Julia 'A'"
     case JuliaB = "Julia 'B'"
@@ -26,10 +28,10 @@ enum FractalModelFactory: String, CaseIterable {
     case PhoenixJ = "Phoenix 'J'"
 }
 
-extension FractalModelFactory {
+extension FractalModel {
     
     func indexPath() -> IndexPath {
-        let row = FractalModelFactory.allCases.firstIndex(of: self) ?? 0
+        let row = FractalModel.allCases.firstIndex(of: self) ?? 0
         return IndexPath(row: row, section: 0)
     }
     

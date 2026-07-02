@@ -10,7 +10,7 @@ internal import Combine
 import SwiftUI
 
 
-class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol {
+class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, ModelProtocol {
     @Published var isRendering = false
     @Published var renderingProgress:Float = 0.0
     @Published var newImage: Image? = nil
@@ -27,7 +27,8 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol {
 
 //    private var pastImages = [UIImage]()
     private var currentPallete:ColorSchemeProtocol?
-//    private var currentModel:FractalModelFactory?
+    private var currentModel:FractalModel?
+    
     private var minExtent:CGFloat {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return 0 }
         let bounds = windowScene.effectiveGeometry.coordinateSpace.bounds
@@ -115,13 +116,28 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol {
         currentPallete = p
         renderingProgress = 0.0
         dataModel.setNewPallete(p: p)
-        self.newImage = nil
+        newImage = nil
         Task {
             await startRendering()
         }
     }
     
     func lastSelectedPallete() -> (any ColorSchemeProtocol)? {
-        return nil
+        return currentPallete
+    }
+    
+    // MARK: - ModelProtocol
+    func modelSelectionDidChange(f: FractalModel) {
+        currentModel = f
+        renderingProgress = 0.0
+        dataModel = f.newDataModel(forSize: CGSize(width: minExtent, height: minExtent), listener: self)
+        newImage = nil
+        Task {
+            await startRendering()
+        }
+    }
+    
+    func lastSelectedModel() -> FractalModel? {
+        return currentModel
     }
 }

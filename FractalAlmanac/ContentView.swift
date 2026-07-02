@@ -8,11 +8,24 @@
 import SwiftUI
 import CoreData
 
+enum ActiveSheet: Identifiable {
+    case model
+    case palette
+    
+    // Conformance to Identifiable is required for .sheet(item:)
+    var id: String {
+        switch self {
+        case .model: return "model"
+        case .palette: return "palette"
+        }
+    }
+}
+
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject var renderModel = RenderModel()
     @State private var renderedImage: Image? = nil
-    @State private var isShowingModal: Bool = false
+    @State private var activeSheet: ActiveSheet?
     
     //    @FetchRequest(
 //        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
@@ -66,20 +79,19 @@ struct ContentView: View {
     
     private var floatingToolbar: some View {
         VStack(alignment: .leading) {
-            Button(action: { print("Model") }) {
+            Button(action: {
+                activeSheet = .model
+            }) {
                 Image(systemName: "map.fill")
             }
             .padding(.bottom, 5)
             
             Button(action: {
-                isShowingModal.toggle()
+                activeSheet = .palette
             }) {
                 Image(systemName: "swatchpalette.fill")
             }
             .padding(.bottom, 5)
-            .sheet(isPresented: $isShowingModal) {
-                PalettePicker(paletteDelegate: renderModel)
-            }
 
             Button(action: { print("Bookmark") }) {
                 Image(systemName: "bookmark.fill")
@@ -93,6 +105,14 @@ struct ContentView: View {
             
             Button(action: { print("Settings") }) {
                 Image(systemName: "gearshape.2.fill")
+            }
+        }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .model:
+                ModelPicker(modelDelegate: renderModel)
+            case .palette:
+                PalettePicker(paletteDelegate: renderModel)
             }
         }
         .font(.title2)
