@@ -7,6 +7,6 @@
 
 
 protocol PaletteProtocol: AnyObject {
-    func palleteSelectionDidChange(p:ColorSchemeProtocol)
-    func lastSelectedPallete() -> (ColorSchemeProtocol)?
+    func palleteSelectionDidChange(p:any ColorSchemeProtocol)
+    func lastSelectedPallete() -> (any ColorSchemeProtocol)?
 }

@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 enum Palette:String, CaseIterable, ColorSchemeProtocol, Identifiable {
     var id: Self { self }
     
@@ -27,6 +26,7 @@ enum Palette:String, CaseIterable, ColorSchemeProtocol, Identifiable {
 enum PaletteStyle: String, CaseIterable {
     case Classic = "Classic"
     case Enhanced = "Enhanced"
+    case Custom = "Custom"
 }
 
 extension Palette {
@@ -57,13 +57,9 @@ extension Palette {
         return [.Heaven, .Smooth, .Psychedlic]
     }
     
-    static func customPalettets() -> [ColorSchemeProtocol] {
-        return ColorScheme.allCustomColorSchemes() ?? []
-    }
-    
     func colorScheme() -> [UInt32] {
         var pallete = [UInt32]()
-        var colors  = [PalleteColor]()
+        var colors  = [PaletteColor]()
         switch self {
             case .Vibrant:
                 colors = [.white, .magenta, .fuscia, .red,
@@ -91,7 +87,7 @@ extension Palette {
                 
             case .Random:
                 for _ in 0..<15 {
-                    colors.append(PalleteColor.random())
+                    colors.append(PaletteColor.random())
                 }
                 colors.append(.black)
                 

@@ -8,7 +8,7 @@
         <attribute name="thumbnail" attributeType="Binary"/>
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="ColorScheme" representedClassName=".ColorScheme" syncable="YES">
+    <entity name="ColorScheme" representedClassName="ColorScheme" syncable="YES">
         <attribute name="colors" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" customClassName="[UInt32]"/>
         <attribute name="filter" attributeType="Decimal" minValueString="0" maxValueString="2" defaultValueString="0.0"/>
         <attribute name="name" attributeType="String" minValueString="1"/>

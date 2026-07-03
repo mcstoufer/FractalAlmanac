@@ -58,7 +58,7 @@ class FractalDataModel: DataModelProtocol {
         return currentExtent
     }
     
-    func setNewPallete(p: ColorSchemeProtocol) {
+    func setNewPallete(p: any ColorSchemeProtocol) {
         colorPalette = p
         populateColorScheme(colors: p.schemeColors())
     }

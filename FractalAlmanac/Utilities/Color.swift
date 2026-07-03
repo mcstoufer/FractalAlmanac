@@ -6,9 +6,12 @@
 //
 
 import UIKit
+import SwiftUI
 
 
-enum PalleteColor: UInt32, CaseIterable { // All 4 bytes long with full opacity
+enum PaletteColor: UInt32, CaseIterable, Identifiable { // All 4 bytes long with full opacity
+    var id: Self { self }
+    
     // R G B A
     case white   = 4294967295 // 0xFFFFFFFF
     case magenta = 4278255615
@@ -83,25 +86,29 @@ enum PalleteColor: UInt32, CaseIterable { // All 4 bytes long with full opacity
     case black         = 255   // 0x000000FF
     case clear         = 0     // 0x00000000
     
-    static func allColorsSorted() -> [PalleteColor] {
-        return  PalleteColor.allCases.sorted(by: { $0.rawValue.hue < $1.rawValue.hue} )
+    static func allColorsSorted() -> [PaletteColor] {
+        return  PaletteColor.allCases.sorted(by: { $0.rawValue.hue < $1.rawValue.hue} )
     }
     
-    static func random<G: RandomNumberGenerator>(using generator: inout G) -> PalleteColor {
-        let color = PalleteColor.allCases.randomElement(using: &generator)!
+    static func random<G: RandomNumberGenerator>(using generator: inout G) -> PaletteColor {
+        let color = PaletteColor.allCases.randomElement(using: &generator)!
         if color == .clear {
-            return PalleteColor.random(using: &generator)
+            return PaletteColor.random(using: &generator)
         }
         return color
     }
     
-    static func random() -> PalleteColor {
+    static func random() -> PaletteColor {
         var g = SystemRandomNumberGenerator()
-        return PalleteColor.random(using: &g)
+        return PaletteColor.random(using: &g)
     }
     
     var uiColor: UIColor {
         return rawValue.uiColor
+    }
+    
+    var systemColor: Color {
+        return rawValue.systemColor
     }
     
     var naturalDescription: String {

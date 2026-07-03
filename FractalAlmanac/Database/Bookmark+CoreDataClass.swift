@@ -64,7 +64,7 @@ class Bookmark: NSManagedObject, SnapshotObject {
         return model ?? ""
     }
     
-    func colorScheme() -> ColorSchemeProtocol {
+    func colorScheme() -> any ColorSchemeProtocol {
         if let p = Palette(rawValue: palette!) {
             return p
         } else if let c = ColorScheme.colorScheme(forName: palette!) {

@@ -36,7 +36,7 @@ extension UserDefaults {
         }
     }
 
-    var lastSelectedPalette: ColorSchemeProtocol {
+    var lastSelectedPalette: any ColorSchemeProtocol {
         get {
             guard let p = UserDefaults.standard.string(forKey: kLastSelectedPalette) else {
                 return Palette(rawValue:"Vibrant")!

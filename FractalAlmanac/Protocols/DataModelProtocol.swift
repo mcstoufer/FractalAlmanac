@@ -13,8 +13,8 @@ protocol DataModelProtocol {
     var pixelData:Data {get}
     init(withExtents extents:ConvolutionalExtent, listener:DataModelRenderProtocol?)
     var extents: Extent { get }
-    func setNewPallete(p:ColorSchemeProtocol)
-    var colorPalette: ColorSchemeProtocol { get }
+    func setNewPallete(p:any ColorSchemeProtocol)
+    var colorPalette: any ColorSchemeProtocol { get }
     @discardableResult func scaleExistingExtent(_ extent:CGRect) async throws -> Bool
     func updateWith(newExtent:Extent) async throws
     func goBack() -> Bool

@@ -53,12 +53,10 @@ class ColorScheme: NSManagedObject, ColorSchemeProtocol {
         return colorSchemes.first as? ColorScheme
     }
     
-    static func allCustomColorSchemes() -> [ColorScheme]? {
-        @Environment(\.managedObjectContext) var managedContext
-        let fetchRequest =  NSFetchRequest<NSManagedObject>(entityName: "ColorScheme")
+    static func allCustomColorSchemes(on managedContext: NSManagedObjectContext) -> [ColorScheme]? {
         var colorSchemes = [NSManagedObject]()
         do {
-            colorSchemes = try managedContext.fetch(fetchRequest)
+            colorSchemes = try managedContext.fetch(fetchRequest())
         } catch let error as NSError {
             print("Could not fetch. \(error), \(error.userInfo)")
         }

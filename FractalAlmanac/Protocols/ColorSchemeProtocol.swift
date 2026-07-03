@@ -13,7 +13,7 @@ enum RenderingFilter:Int {
     case Off
 }
 
-protocol ColorSchemeProtocol {
+protocol ColorSchemeProtocol: Hashable {
     var paletteName: String { get }
     func schemeColors() -> [UInt32]
     func schemeSystemColors() -> [Color]

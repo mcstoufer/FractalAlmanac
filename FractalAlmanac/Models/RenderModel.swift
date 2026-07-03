@@ -26,7 +26,7 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     )
 
 //    private var pastImages = [UIImage]()
-    private var currentPallete:ColorSchemeProtocol?
+    private var currentPallete:(any ColorSchemeProtocol)?
     private var currentModel:FractalModel?
     
     private var minExtent:CGFloat {
