@@ -28,6 +28,11 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
 //    private var pastImages = [UIImage]()
     private var currentPallete:(any ColorSchemeProtocol)?
     private var currentModel:FractalModel?
+    private let service: DrawActor
+    
+    init(service:DrawActor = DrawActor()) {
+        self.service = service
+    }
     
     private var minExtent:CGFloat {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return 0 }
@@ -42,49 +47,25 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
         return scene.effectiveGeometry.interfaceOrientation
     }
     
-    func startRendering() async {
-        Task.detached(priority: .utility) {
-            if await self.isRendering == true {
+    func startRendering() {
+        Task {
+            if self.isRendering == true {
                 return
             }
             
             //        let start = DispatchTime.now()
-            guard let renderedImage = await self.draw(width: Int(self.minExtent), height: Int(self.minExtent)) else {
+            guard let renderedImage = await service.draw(
+                width: Int(self.minExtent),
+                height: Int(self.minExtent),
+                dataModel: dataModel
+            ) else {
                 return
             }
             
-            //        let end = DispatchTime.now()
-            await MainActor.run {
-                self.newImage = Image(uiImage: renderedImage)
-                self.isRendering = false
-            }
-        }
-    }
-    
-    @discardableResult
-    func draw(width:Int,height:Int) async -> UIImage?
-    {
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        var cgImage:CGImage?
-        
-        var pixelData = await dataModel.assemble()
-        pixelData.withUnsafeMutableBytes( { (rawBufferPtr: UnsafeMutableRawBufferPointer) in
-            if let rawPtr = rawBufferPtr.baseAddress {
-                let bitmapContext = CGContext(data: rawPtr,
-                                              width: width,
-                                              height: height,
-                                              bitsPerComponent: 8,
-                                              bytesPerRow: 4*width,
-                                              space: colorSpace,
-                                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-                cgImage = bitmapContext?.makeImage()
-            }
-        })
-        if let filteredImage = cgImage?.applyFilter(filter: dataModel.colorPalette.colorSchemeFilter()) {
             dataModel.release()
-            return UIImage(cgImage: filteredImage)
-        } else {
-            return nil
+            //        let end = DispatchTime.now()
+            self.newImage = Image(uiImage: renderedImage)
+            self.isRendering = false
         }
     }
     
@@ -108,7 +89,7 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     }
     
     func extentsHaveRefreshed() async {
-        await startRendering()
+        startRendering()
     }
     
     // MARK: - PaletteProtocol
@@ -118,7 +99,7 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
         dataModel.setNewPallete(p: p)
         newImage = nil
         Task {
-            await startRendering()
+            startRendering()
         }
     }
     
@@ -133,7 +114,7 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
         dataModel = f.newDataModel(forSize: CGSize(width: minExtent, height: minExtent), listener: self)
         newImage = nil
         Task {
-            await startRendering()
+            startRendering()
         }
     }
     

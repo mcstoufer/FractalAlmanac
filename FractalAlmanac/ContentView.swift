@@ -11,12 +11,18 @@ import CoreData
 enum ActiveSheet: Identifiable {
     case model
     case palette
+    case bookmark
+    case settings
+    case snapshot
     
     // Conformance to Identifiable is required for .sheet(item:)
     var id: String {
         switch self {
-        case .model: return "model"
-        case .palette: return "palette"
+            case .model: return "model"
+            case .palette: return "palette"
+            case .bookmark: return "bookmark"
+            case .settings: return "settings"
+            case .snapshot: return "snapshot"
         }
     }
 }
@@ -63,7 +69,7 @@ struct ContentView: View {
                         }
                     }
                     .task {
-                        await renderModel.startRendering()
+                        renderModel.startRendering()
                     }
                 }
             }
@@ -93,26 +99,38 @@ struct ContentView: View {
             }
             .padding(.bottom, 5)
 
-            Button(action: { print("Bookmark") }) {
+            Button(action: {
+                activeSheet = .bookmark
+            }) {
                 Image(systemName: "bookmark.fill")
             }
             .padding(.bottom, 5)
             
-            Button(action: { print("Save") }) {
+            Button(action: {
+                activeSheet = .snapshot
+            }) {
                 Image(systemName: "photo.badge.arrow.down.fill")
             }
             .padding(.bottom, 5)
             
-            Button(action: { print("Settings") }) {
+            Button(action: {
+                activeSheet = .settings
+            }) {
                 Image(systemName: "gearshape.2.fill")
             }
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
-            case .model:
-                ModelPicker(modelDelegate: renderModel)
-            case .palette:
-                PalettePicker(paletteDelegate: renderModel)
+                case .model:
+                    ModelPicker(modelDelegate: renderModel)
+                case .palette:
+                    PalettePicker(paletteDelegate: renderModel)
+                case .bookmark:
+                    BookmarkSheet()
+                case .settings:
+                    SettingsSheet()
+                case .snapshot:
+                    SnapshotSheet()
             }
         }
         .font(.title2)
