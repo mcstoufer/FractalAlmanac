@@ -88,7 +88,6 @@ struct PalettePicker: View, PaletteBuilderProtocol {
         }
         .sheet(isPresented: $showBuilderSheet) {
             PaletteBuilder(pbDelegate: self)
-                .frame(width: 600, height: 365)
         }
     }
 
