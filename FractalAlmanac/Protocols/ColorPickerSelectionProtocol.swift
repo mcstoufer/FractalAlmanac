@@ -6,6 +6,6 @@
 //
 
 
-protocol ColorPickerSelectionProtocol: AnyObject {
-    func didSelect(color c:PaletteColor, forIndex index:Int)
+protocol ColorPickerSelectionProtocol {
+    func didSelect(color c:PaletteColor)
 }

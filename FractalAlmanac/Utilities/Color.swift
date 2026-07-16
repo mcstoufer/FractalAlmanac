@@ -9,7 +9,7 @@ import UIKit
 import SwiftUI
 
 
-enum PaletteColor: UInt32, CaseIterable, Identifiable { // All 4 bytes long with full opacity
+enum PaletteColor: UInt32, CaseIterable, Identifiable, Hashable, NumericColorProtocol { // All 4 bytes long with full opacity
     var id: Self { self }
     
     // R G B A

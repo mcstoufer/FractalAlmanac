@@ -15,7 +15,7 @@ struct ColorPaletteItem: View, Hashable, Identifiable {
     var body: some View {
         HStack(alignment: .center) {
             Rectangle()
-                .fill(color.rawValue.systemColor)
+                .fill(color.systemColor)
                 .frame(width: 40, height: 22)
                 .cornerRadius(12)
                 .overlay(
@@ -25,31 +25,33 @@ struct ColorPaletteItem: View, Hashable, Identifiable {
             Text(color.naturalDescription)
                 .padding(.leading, 8)
         }
-        .border(Color.black.opacity(0.2), width: 1)
     }
 }
 
-struct PaletteBuilder: View {
+struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     
     let paletteBuilderDelegate: PaletteBuilderProtocol?
     var filters = ["Glow", "Soften", "Off"]
     var columns = [
         GridItem(
-            .adaptive(minimum: 100, maximum: 150),
+            .adaptive(minimum: 175, maximum: 225),
             spacing: 16,
             alignment: .leading
         )
     ]
     
-    private var candidateColorPalette = Array(0...15).map {index in
-        ColorPaletteItem(color: index == 0 ? .red : index == 15 ? .black : .clear)
+    @State private var candidateColorPalette = Array(0...15).map {index in
+        ColorPaletteItem(
+            color: index == 0 ? PaletteColor.red : index == 15 ? PaletteColor.black : PaletteColor.clear
+        )
     }
     
     @State private var paletteName = ""
     @State private var filterSwitch = "Off"
     @State private var isInterpolateEnabled = false
     @State private var interpolateValue = 16.0
-
+    @State private var selected: ColorPaletteItem? = nil
+    
     @Environment(\.dismiss) var dismiss
 
     public init(pbDelegate: PaletteBuilderProtocol? = nil) {
@@ -78,10 +80,19 @@ struct PaletteBuilder: View {
             .padding([.leading, .trailing], 16)
             .padding(.top, 8)
             
-            ScrollView(.vertical) { // 2. Wrap the grid in a scroll view
-                LazyVGrid(columns: columns, spacing: 16) { // 3. Use LazyVGrid for lazy-loading cells
-                    ForEach(candidateColorPalette, id: \.self) { $0 }
+            ScrollView(.vertical) {
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(candidateColorPalette, id: \.self) { item in
+                        Button(action: {
+                            selected = item
+                        }) {
+                            item.tag(item)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+            }.sheet(item: $selected) { item in
+                PaletteColorPicker(colorPickerDelegate: self)
             }
             .padding()
             
@@ -134,6 +145,12 @@ struct PaletteBuilder: View {
             interpolatedColors = interpolatedColors.interpolateColorScheme(steps: Int(interpolateValue))
         }
         return interpolatedColors.map { $0.systemColor }
+    }
+    
+    func didSelect(color c: PaletteColor) {
+        if let index = candidateColorPalette.firstIndex(where: { $0.id == selected?.id }) {
+            candidateColorPalette[index].color = c
+        }
     }
 }
 
