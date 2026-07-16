@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct ColorPickerCell: View {
-    var color: PaletteColor
+    var color: any NumericColorProtocol
     
     var body: some View {
         HStack(alignment: .center) {
@@ -23,10 +23,11 @@ struct ColorPickerCell: View {
 }
 
 struct PaletteColorPicker: View {
-    @State private var selectedColor: PaletteColor? = nil
-//    @State private var selectedSystemColor: Color = .clear
+    @State private var selectedColor: PaletteColor? = .clear
+    @State private var selectedSystemColor: Color = .clear
+    @State private var customSystemColorName: String? = "New Color name" // Can be edited or wiped
 //    @State private var finalSystemColor: Color = .clear
-//    @State private var isPickerPresented = false
+    @State private var debounceTask: Task<Void, Never>? = nil
     
     @Environment(\.dismiss) var dismiss
 
@@ -41,16 +42,44 @@ struct PaletteColorPicker: View {
                         .tag(paletteColor)
                 }
             }
-            .onChange(of: selectedColor) { oldColor, newColor in
+            .onChange(of: selectedColor) { _, newColor in
                 if let newColor {
-                    colorPickerDelegate?.didSelect(color: newColor)
+                    colorPickerDelegate?.didSelect(color: newColor.systemColor, name: newColor.naturalDescription)
                     dismiss()
                 }
             }
-//            Button("Pick a Color") {
-//                isPickerPresented.toggle()
-//            }
-//            .buttonStyle(.borderedProminent)
+            
+            NamedColorPicker(
+                selection: $selectedSystemColor,
+                colorName: $customSystemColorName
+            )
+                .padding()
+                .presentationDetents([.medium])
+                .onChange(of: selectedSystemColor) {
+                    _,
+                    newColor in
+                    // Cancel the previous task if the user is still dragging
+                    debounceTask?.cancel()
+                    
+                    // Start a new task that waits for the user to stop dragging
+                    debounceTask = Task {
+                        do {
+                            // Wait for 0.3 seconds of inactivity
+                            try await Task.sleep(for: .seconds(0.3))
+                            
+                            // Check if the task was cancelled before assigning
+                            if !Task.isCancelled {
+//                                finalSystemColor = newColor
+                                colorPickerDelegate?.didSelect(
+                                    color: selectedSystemColor,
+                                    name: customSystemColorName
+                                )
+                            }
+                        } catch {
+                            // Task was cancelled because a new color was picked
+                        }
+                    }
+                }
            
             Divider()
             Button("Dismiss") {
@@ -58,16 +87,6 @@ struct PaletteColorPicker: View {
             }
             .padding()
         }
-//        .sheet(isPresented: $isPickerPresented,
-//               onDismiss: {
-//            finalSystemColor = selectedSystemColor
-//            colorPickerDelegate?.didSelect(color: finalSystemColor.paletteColor)
-//        }, content: {
-//            ColorPicker("Select a System Color", selection: $selectedSystemColor)
-//                .padding()
-//                .presentationDetents([.medium])
-//            Spacer()
-//        })
     }
 }
 

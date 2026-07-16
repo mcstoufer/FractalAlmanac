@@ -10,19 +10,20 @@ import SwiftUI
 struct ColorPaletteItem: View, Hashable, Identifiable {
     let id = UUID()
     
-    var color: PaletteColor
+    var color: Color
+    var name: String
     
     var body: some View {
         HStack(alignment: .center) {
             Rectangle()
-                .fill(color.systemColor)
+                .fill(color)
                 .frame(width: 40, height: 22)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.black.opacity(0.2), lineWidth: 1)
                 )
-            Text(color.naturalDescription)
+            Text(name)
                 .padding(.leading, 8)
         }
     }
@@ -42,7 +43,8 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     
     @State private var candidateColorPalette = Array(0...15).map {index in
         ColorPaletteItem(
-            color: index == 0 ? PaletteColor.red : index == 15 ? PaletteColor.black : PaletteColor.clear
+            color: index == 0 ? PaletteColor.red.systemColor : index == 15 ? PaletteColor.black.systemColor : PaletteColor.clear.systemColor,
+            name: index == 0 ? PaletteColor.red.naturalDescription : index == 15 ? PaletteColor.black.naturalDescription : PaletteColor.clear.naturalDescription,
         )
     }
     
@@ -139,7 +141,7 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
         var interpolatedColors = candidateColorPalette.filter { color in
             color.color != .clear
         }.map {
-            $0.color.rawValue
+            $0.color.toUInt32()!
         }
         if isInterpolateEnabled {
             interpolatedColors = interpolatedColors.interpolateColorScheme(steps: Int(interpolateValue))
@@ -147,9 +149,10 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
         return interpolatedColors.map { $0.systemColor }
     }
     
-    func didSelect(color c: PaletteColor) {
+    func didSelect(color c: Color, name: String?) {
         if let index = candidateColorPalette.firstIndex(where: { $0.id == selected?.id }) {
-            candidateColorPalette[index].color = c
+            candidateColorPalette[index].color = c.systemColor
+            candidateColorPalette[index].name = name ?? c.naturalDescription
         }
     }
 }

@@ -30,25 +30,9 @@
             filePath = "FractalAlmanac/Sheets/PaletteBuilder.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "44"
-            endingLineNumber = "44"
-            landmarkName = "columns"
-            landmarkType = "24">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "6A7CA91C-2EF9-45C9-B2B2-AD98F7D242AA"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "FractalAlmanac/Sheets/ColorPicker.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "16"
-            endingLineNumber = "16"
-            landmarkName = "body"
+            startingLineNumber = "45"
+            endingLineNumber = "45"
+            landmarkName = "candidateColorPalette"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
