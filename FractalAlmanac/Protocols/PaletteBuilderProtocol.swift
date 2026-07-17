@@ -10,5 +10,5 @@ import Foundation
 
 protocol PaletteBuilderProtocol {
     func didCreateNewPalette()
-    func didUpdateExistingPalette(indexPath:IndexPath)
+    func didUpdateExistingPalette()
 }

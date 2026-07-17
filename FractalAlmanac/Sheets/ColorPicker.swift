@@ -13,10 +13,12 @@ struct ColorPickerCell: View {
         HStack(alignment: .center) {
             Rectangle()
                 .fill(color.systemColor)
-                .frame(width: 40, height: 36)
-                .cornerRadius(16)
+                .frame(width: 50, height: 28)
+                .cornerRadius(14)
                 .padding([.leading, .trailing], 10)
+            
             Text(color.naturalDescription)
+                .frame(height: 28)
             Spacer()
         }
     }
@@ -26,7 +28,6 @@ struct PaletteColorPicker: View {
     @State private var selectedColor: PaletteColor? = .clear
     @State private var selectedSystemColor: Color = .clear
     @State private var customSystemColorName: String? = "New Color name" // Can be edited or wiped
-//    @State private var finalSystemColor: Color = .clear
     @State private var debounceTask: Task<Void, Never>? = nil
     
     @Environment(\.dismiss) var dismiss
@@ -39,6 +40,7 @@ struct PaletteColorPicker: View {
             List(selection: $selectedColor) {
                 ForEach(allSortedColors) { paletteColor in
                     ColorPickerCell(color: paletteColor)
+                        .listRowInsets(EdgeInsets())
                         .tag(paletteColor)
                 }
             }
@@ -48,6 +50,7 @@ struct PaletteColorPicker: View {
                     dismiss()
                 }
             }
+            .environment(\.defaultMinListRowHeight, 34)
             
             NamedColorPicker(
                 selection: $selectedSystemColor,

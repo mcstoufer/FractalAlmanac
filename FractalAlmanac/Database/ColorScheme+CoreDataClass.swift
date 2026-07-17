@@ -5,7 +5,7 @@
 //  Created by Dragon Admin on 6/29/26.
 //
 import Foundation
-import CoreData
+internal import CoreData
 import SwiftUI
 
 
@@ -30,7 +30,7 @@ class ColorScheme: NSManagedObject, ColorSchemeProtocol {
         return RenderingFilter(rawValue: (self.filter?.intValue)!) ?? .Off
     }
     
-    static func newColorScheme() -> ColorScheme? {
+    static func newColorScheme(on managedContext: NSManagedObjectContext) -> ColorScheme? {
         @Environment(\.managedObjectContext) var managedContext
         let entity = NSEntityDescription.entity(forEntityName: "ColorScheme", in: managedContext)!
        
@@ -38,8 +38,7 @@ class ColorScheme: NSManagedObject, ColorSchemeProtocol {
         return colorScheme as? ColorScheme
     }
     
-    static func colorScheme(forName name:String) -> ColorScheme? {
-        @Environment(\.managedObjectContext) var managedContext
+    static func colorScheme(forName name:String, on managedContext: NSManagedObjectContext) -> ColorScheme? {
         let fetchRequest =  NSFetchRequest<NSManagedObject>(entityName: "ColorScheme")
         fetchRequest.fetchLimit = 1
         fetchRequest.predicate = NSPredicate(format: "%K=%@", "name", name)

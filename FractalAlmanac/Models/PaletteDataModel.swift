@@ -77,7 +77,7 @@ extension Palette {
                           .tangerine, .burntOrange, .red, .rust,
                           .firebrick, .bloodRed, .errieBlack, .black]
             case .Rainbow:
-                colors = [.palePurple, .dullPink, .blueGreen, .strongCyan,
+                colors = [.palePurple, .dullPink, .vermillion, .strongCyan,
                           .moderateBlue, .verySoftBlue, .darkModLime, .desatLime,
                           .softGreen, .softYellow, .brightOrange, .dullOrange,
                           .vividOrange, .vividRed, .darkRed, .black]

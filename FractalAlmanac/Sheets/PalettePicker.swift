@@ -20,10 +20,12 @@ struct PalettePickerCell: View {
                         endPoint: .trailing
                     )
                 )
-                .frame(width: 40, height: 36)
+                .frame(width: 50, height: 28)
+                .padding([.top, .bottom], 0)
                 .padding([.leading, .trailing], 10)
             
             Text(palette.paletteName)
+                .frame(height: 28)
             Spacer()
         }
     }
@@ -45,25 +47,29 @@ struct PalettePicker: View, PaletteBuilderProtocol {
                 Section(header: Text(PaletteStyle.Classic.rawValue)) {
                     ForEach(Palette.classicPalettes()) { palette in
                         PalettePickerCell(palette: palette)
+                            .listRowInsets(EdgeInsets())
                             .tag(palette)
                     }
                 }
                 Section(header: Text(PaletteStyle.Enhanced.rawValue)) {
                     ForEach(Palette.enhancedPalettes()) { palette in
                         PalettePickerCell(palette: palette)
+                            .listRowInsets(EdgeInsets())
                             .tag(palette)
                     }
                 }
-                if let customPalettes {
+                if let customPalettes, customPalettes.count > 0 {
                     Section(header: Text(PaletteStyle.Custom.rawValue)) {
                         ForEach(customPalettes) { palette in
                             PalettePickerCell(palette: palette)
+                                .listRowInsets(EdgeInsets())
                                 .tag(palette)
                         }
                     }
                 }
             }
             .listStyle(.insetGrouped)
+            .environment(\.defaultMinListRowHeight, 34)
             .onChange(of: selectedPalette) { oldPalette, newPalette in
                 if let newPalette {
                     paletteDelegate?.palleteSelectionDidChange(p: newPalette)
@@ -71,7 +77,9 @@ struct PalettePicker: View, PaletteBuilderProtocol {
                     dismiss()
                 }
             }
+            
             Divider()
+            
             HStack(alignment: .center) {
                 Button("New...") {
                     showBuilderSheet.toggle()
@@ -98,7 +106,7 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     }
     
     // MARK: - PaletteBuilderProtocol
-    func didUpdateExistingPalette(indexPath:IndexPath) {
+    func didUpdateExistingPalette() {
         loadCustomColors()
     }
     

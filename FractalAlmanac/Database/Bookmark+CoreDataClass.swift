@@ -4,7 +4,7 @@
 //
 //  Created by Dragon Admin on 6/29/26.
 //
-import CoreData
+internal import CoreData
 import UIKit
 
 
@@ -67,7 +67,10 @@ class Bookmark: NSManagedObject, SnapshotObject {
     func colorScheme() -> any ColorSchemeProtocol {
         if let p = Palette(rawValue: palette!) {
             return p
-        } else if let c = ColorScheme.colorScheme(forName: palette!) {
+        } else if let c = ColorScheme.colorScheme(
+            forName: palette!,
+            on:PersistenceController.shared.container.viewContext
+        ) {
             return c
         } else {
             return Palette.Vibrant

@@ -58,7 +58,7 @@ enum PaletteColor: UInt32, CaseIterable, Identifiable, Hashable, NumericColorPro
     case brown         = 2521497855
     case bloodRed      = 2466776063
     case desatLime     = 2429060863
-    case blueGreen     = 2284679679
+    case vermillion    = 2284679679
     case greenLighten2 = 2177336575
     case lime          = 2164195583
     case purple        = 2147516671
