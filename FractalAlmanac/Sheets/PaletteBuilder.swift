@@ -82,6 +82,7 @@ struct ColorPaletteItem: View, Hashable, Identifiable {
                 )
             Text(name)
                 .padding(.leading, 8)
+                .font(.body)
         }
     }
 }

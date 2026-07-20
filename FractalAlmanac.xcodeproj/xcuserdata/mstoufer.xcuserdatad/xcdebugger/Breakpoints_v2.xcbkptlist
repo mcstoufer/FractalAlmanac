@@ -30,8 +30,8 @@
             filePath = "FractalAlmanac/Sheets/PalettePicker.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "67"
-            endingLineNumber = "67"
+            startingLineNumber = "71"
+            endingLineNumber = "71"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -39,16 +39,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "581BB22E-D6CF-4C2D-902C-421632CF9BC6"
-            shouldBeEnabled = "Yes"
+            uuid = "2E67A4B6-4F81-4B14-8135-0B3B497C07F0"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "FractalAlmanac/Sheets/PaletteBuilder.swift"
+            filePath = "FractalAlmanac/Models/DrawActor.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "284"
-            endingLineNumber = "284"
-            landmarkName = "updateAndSave(_:)"
+            startingLineNumber = "29"
+            endingLineNumber = "29"
+            landmarkName = "draw(width:height:dataModel:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

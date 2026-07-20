@@ -26,6 +26,7 @@ struct PalettePickerCell: View {
             
             Text(palette.title)
                 .frame(height: 28)
+                .font(.body)
             Spacer()
         }
     }
@@ -60,14 +61,20 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     var body: some View {
         VStack(alignment: .leading) {
             List(selection: $selectedPalette) {
-                Section(header: Text(PaletteStyle.Classic.rawValue)) {
+                Section(header: Text(PaletteStyle.Classic.rawValue)
+                    .font(.title3)
+                    .bold()
+                ) {
                     ForEach(combinedItems[PaletteStyle.Classic.rawValue] ?? []) { palette in
                         PalettePickerCell(palette: palette)
                             .listRowInsets(EdgeInsets())
                             .tag(palette)
                     }
                 }
-                Section(header: Text(PaletteStyle.Enhanced.rawValue)) {
+                Section(header: Text(PaletteStyle.Enhanced.rawValue)
+                    .font(.title3)
+                    .bold()
+                ) {
                     ForEach(combinedItems[PaletteStyle.Enhanced.rawValue] ?? []) { palette in
                         PalettePickerCell(palette: palette)
                             .listRowInsets(EdgeInsets())
@@ -75,7 +82,10 @@ struct PalettePicker: View, PaletteBuilderProtocol {
                     }
                 }
                 if dynamicPalettes.count > 0 {
-                    Section(header: Text(PaletteStyle.Custom.rawValue)) {
+                    Section(header: Text(PaletteStyle.Custom.rawValue)
+                        .font(.title3)
+                        .bold()
+                    ) {
                         ForEach(combinedItems[PaletteStyle.Custom.rawValue] ?? []) { palette in
                             PalettePickerCell(palette: palette)
                                 .listRowInsets(EdgeInsets())
