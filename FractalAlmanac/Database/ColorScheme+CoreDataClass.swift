@@ -10,28 +10,9 @@ import SwiftUI
 
 
 @objc(ColorScheme)
-class ColorScheme: NSManagedObject, ColorSchemeProtocol {
-
-    var paletteName: String {
-        return self.name!
-    }
-    
-    func schemeColors() -> [UInt32] {
-        return self.colors!
-    }
-    
-    func schemeSystemColors() -> [Color] {
-        return self.colors!.map { color in
-            color.systemColor
-        }
-    }
-    
-    func colorSchemeFilter() -> RenderingFilter {
-        return RenderingFilter(rawValue: (self.filter?.intValue)!) ?? .Off
-    }
+class ColorScheme: NSManagedObject {
     
     static func newColorScheme(on managedContext: NSManagedObjectContext) -> ColorScheme? {
-        @Environment(\.managedObjectContext) var managedContext
         let entity = NSEntityDescription.entity(forEntityName: "ColorScheme", in: managedContext)!
        
         let colorScheme = NSManagedObject(entity: entity, insertInto: managedContext)
@@ -69,12 +50,30 @@ extension ColorScheme {
         return NSFetchRequest<ColorScheme>(entityName: "ColorScheme")
     }
 
-    @NSManaged public var colors: [UInt32]?
+    @NSManaged public var colors: Data?
     @NSManaged public var filter: NSDecimalNumber?
     @NSManaged public var name: String?
 
 }
 
-extension ColorScheme : Identifiable {
-
+extension ColorScheme : ColorSchemeProtocol {
+    var stableID: String { self.objectID.uriRepresentation().absoluteString}
+    
+    var paletteName: String {
+        return self.name!
+    }
+    
+    func schemeColors() -> [UInt32] {
+        return self.colorsArray
+    }
+    
+    func schemeSystemColors() -> [Color] {
+        return self.colorsArray.map { color in
+            color.systemColor
+        }
+    }
+    
+    func colorSchemeFilter() -> RenderingFilter {
+        return RenderingFilter(rawValue: (self.filter?.intValue)!) ?? .Off
+    }
 }

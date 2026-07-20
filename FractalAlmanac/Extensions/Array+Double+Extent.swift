@@ -14,3 +14,11 @@ extension Array where Element == Double {
         return Extent(XMin: self[0], XMax: self[1], YMin: self[2], YMax: self[3])
     }
 }
+
+extension Array {
+    func appending(_ element: Element) -> [Element] {
+        var copy = self
+        copy.append(element)
+        return copy
+    }
+}

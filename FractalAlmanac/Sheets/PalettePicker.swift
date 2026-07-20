@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct PalettePickerCell: View {
-    var palette: any ColorSchemeProtocol
+    var palette: UnifiedRowItem
     
     var body: some View {
         HStack(alignment: .center) {
             Rectangle()
                 .fill(
                     LinearGradient(
-                        colors: palette.schemeSystemColors(),
+                        colors: palette.base.schemeSystemColors(),
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -24,7 +24,7 @@ struct PalettePickerCell: View {
                 .padding([.top, .bottom], 0)
                 .padding([.leading, .trailing], 10)
             
-            Text(palette.paletteName)
+            Text(palette.title)
                 .frame(height: 28)
             Spacer()
         }
@@ -32,35 +32,51 @@ struct PalettePickerCell: View {
 }
 
 struct PalettePicker: View, PaletteBuilderProtocol {
-    @State private var selectedPalette: Palette? = (UserDefaults.standard.lastSelectedPalette as! Palette)
-    @State private var customPalettes: [ColorScheme]? = nil
+    @State private var selectedPalette: UnifiedRowItem?
     @State private var showBuilderSheet = false
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) private var viewContext
 
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(
+            keyPath: \ColorScheme.name,
+            ascending: true
+        )],
+        animation: .default
+    )
+    private var dynamicPalettes: FetchedResults<ColorScheme>
+    let classicPalettes = Palette.classicPalettes()
+    let enahncedPalettes = Palette.enhancedPalettes()
+    
+    private var combinedItems: [String: [UnifiedRowItem]] {
+        return [PaletteStyle.Classic.rawValue: classicPalettes.map { UnifiedRowItem($0) },
+                PaletteStyle.Enhanced.rawValue: enahncedPalettes.map { UnifiedRowItem($0) },
+                PaletteStyle.Custom.rawValue: dynamicPalettes.map { UnifiedRowItem($0) }]
+    }
+    
     let paletteDelegate:PaletteProtocol?
     
     var body: some View {
         VStack(alignment: .leading) {
             List(selection: $selectedPalette) {
                 Section(header: Text(PaletteStyle.Classic.rawValue)) {
-                    ForEach(Palette.classicPalettes()) { palette in
+                    ForEach(combinedItems[PaletteStyle.Classic.rawValue] ?? []) { palette in
                         PalettePickerCell(palette: palette)
                             .listRowInsets(EdgeInsets())
                             .tag(palette)
                     }
                 }
                 Section(header: Text(PaletteStyle.Enhanced.rawValue)) {
-                    ForEach(Palette.enhancedPalettes()) { palette in
+                    ForEach(combinedItems[PaletteStyle.Enhanced.rawValue] ?? []) { palette in
                         PalettePickerCell(palette: palette)
                             .listRowInsets(EdgeInsets())
                             .tag(palette)
                     }
                 }
-                if let customPalettes, customPalettes.count > 0 {
+                if dynamicPalettes.count > 0 {
                     Section(header: Text(PaletteStyle.Custom.rawValue)) {
-                        ForEach(customPalettes) { palette in
+                        ForEach(combinedItems[PaletteStyle.Custom.rawValue] ?? []) { palette in
                             PalettePickerCell(palette: palette)
                                 .listRowInsets(EdgeInsets())
                                 .tag(palette)
@@ -71,9 +87,9 @@ struct PalettePicker: View, PaletteBuilderProtocol {
             .listStyle(.insetGrouped)
             .environment(\.defaultMinListRowHeight, 34)
             .onChange(of: selectedPalette) { oldPalette, newPalette in
-                if let newPalette {
-                    paletteDelegate?.palleteSelectionDidChange(p: newPalette)
-                    UserDefaults.standard.lastSelectedPalette = newPalette
+                if let newPalette = newPalette?.base as? any ColorSchemeProtocol {
+                    paletteDelegate?.palleteSelectionDidChange(p: newPalette )
+                    UserDefaults.standard.lastSelectedPalette = newPalette 
                     dismiss()
                 }
             }
@@ -91,26 +107,19 @@ struct PalettePicker: View, PaletteBuilderProtocol {
             }
             .padding()
         }
-        .task {
-            loadCustomColors()
-        }
         .sheet(isPresented: $showBuilderSheet) {
             PaletteBuilder(pbDelegate: self)
                 .frame(width: 750)
                 .presentationSizing(.fitted)
         }
     }
-
-    private func loadCustomColors() {
-        customPalettes = ColorScheme.allCustomColorSchemes(on: viewContext)
-    }
     
     // MARK: - PaletteBuilderProtocol
     func didUpdateExistingPalette() {
-        loadCustomColors()
+        //
     }
     
     func didCreateNewPalette() {
-        loadCustomColors()
+        //
     }
 }

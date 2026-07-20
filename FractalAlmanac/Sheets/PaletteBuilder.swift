@@ -88,8 +88,11 @@ struct ColorPaletteItem: View, Hashable, Identifiable {
 
 struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) var dismiss
 
     let paletteBuilderDelegate: PaletteBuilderProtocol?
+    var interpolatedColors: [UInt32] = []
+    
     var columns = [
         GridItem(
             .adaptive(minimum: 175, maximum: 225),
@@ -112,10 +115,9 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     @State private var interpolateValue = 16.0
     @State private var selected: ColorPaletteItem? = nil
     @State private var showingAlert = false
-    
-    @Environment(\.dismiss) var dismiss
-
     @State private var validationState: ValidationState = .Success
+
+
     
     public init(pbDelegate: PaletteBuilderProtocol? = nil) {
         paletteBuilderDelegate = pbDelegate
@@ -165,8 +167,10 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
                     .frame(width: 200)
                 Spacer()
                 Text("\(Int(interpolateValue))")
+                    .greyOutDisabled(isInterpolateEnabled == false)
                 Slider(value: $interpolateValue, in: 16...64, step: 1.0)
                     .frame(width: 200)
+                    .disabled(isInterpolateEnabled == false)
             }
             .padding()
             
@@ -233,11 +237,11 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     }
     
     private func save() -> ValidationState {
-        if let validation = validateInput() {
+        if let validationFailure = validateInput() {
             return .Failure(
                 (
                     title: "Error",
-                    message: validation,
+                    message: validationFailure,
                     ok: "OK"
                 )
             )
@@ -277,7 +281,7 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     private func updateAndSave(_ colorScheme:ColorScheme?) {
         
         colorScheme?.name = paletteName
-        colorScheme?.colors = validCandidateColors()
+        colorScheme?.colorsArray = buildGradientRawColors()
         colorScheme?.filter = NSDecimalNumber(value:filterSwitch.rawValue)
         do {
             try colorScheme?.managedObjectContext?.save()
@@ -287,23 +291,20 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     }
     
     private func validCandidateColors() -> [UInt32] {
-        return candidateColorPalette.filter(
-            { $0.color != .clear }
-        ).map {
-            $0.color.toUInt32()!
-        }
+        return candidateColorPalette.filterOutColor(color: .clear).toRawColors()
     }
     
-    private func buildGradientColors() -> [Color] {
-        var interpolatedColors = candidateColorPalette.filter { color in
-            color.color != .clear
-        }.map {
-            $0.color.toUInt32()!
-        }
+    private func buildGradientRawColors() -> [UInt32] {
+        var interpolatedColors = candidateColorPalette.filterOutColor(color: .clear).toRawColors()
+        
         if isInterpolateEnabled {
             interpolatedColors = interpolatedColors.interpolateColorScheme(steps: Int(interpolateValue))
         }
-        return interpolatedColors.map { $0.systemColor }
+        return interpolatedColors
+    }
+    
+    private func buildGradientColors() -> [Color] {
+        return buildGradientRawColors().map { $0.systemColor }
     }
     
     func didSelect(color c: Color, name: String?) {
