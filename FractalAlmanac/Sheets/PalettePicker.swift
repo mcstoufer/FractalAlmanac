@@ -98,7 +98,7 @@ struct PalettePicker: View, PaletteBuilderProtocol {
             .environment(\.defaultMinListRowHeight, 34)
             .onChange(of: selectedPalette) { oldPalette, newPalette in
                 if let newPalette = newPalette?.base as? any ColorSchemeProtocol {
-                    paletteDelegate?.palleteSelectionDidChange(p: newPalette )
+                    paletteDelegate?.paletteSelectionDidChange(p: newPalette )
                     UserDefaults.standard.lastSelectedPalette = newPalette 
                     dismiss()
                 }

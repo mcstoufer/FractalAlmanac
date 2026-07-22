@@ -17,6 +17,7 @@ protocol ColorSchemeProtocol: Identifiable {
     var stableID: String { get }
     
     var paletteName: String { get }
+    var paletteShaderColors: [Float] { get }
     func schemeColors() -> [UInt32]
     func schemeSystemColors() -> [Color]
     func colorSchemeFilter() -> RenderingFilter

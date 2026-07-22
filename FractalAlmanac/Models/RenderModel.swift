@@ -11,6 +11,7 @@ import SwiftUI
 
 
 class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, ModelProtocol {
+   
     @Published var isRendering = false
     @Published var renderingProgress:Float = 0.0
     @Published var newImage: Image? = nil
@@ -93,17 +94,18 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     }
     
     // MARK: - PaletteProtocol
-    func palleteSelectionDidChange(p: any ColorSchemeProtocol) {
+    func paletteSelectionDidChange(p: any ColorSchemeProtocol) {
         currentPallete = p
         renderingProgress = 0.0
         dataModel.setNewPallete(p: p)
         newImage = nil
-        Task {
-            startRendering()
-        }
+//        Task {
+//            startRendering()
+//        }
     }
     
-    func lastSelectedPallete() -> (any ColorSchemeProtocol)? {
+    
+    func lastSelectedPalette() -> (any ColorSchemeProtocol)? {
         return currentPallete
     }
     

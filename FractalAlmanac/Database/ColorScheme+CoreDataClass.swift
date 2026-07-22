@@ -63,6 +63,10 @@ extension ColorScheme : ColorSchemeProtocol {
         return self.name!
     }
     
+    var paletteShaderColors: [Float] {
+        return self.colorsArray.map(\.shaderColor).flatMap{ $0 }
+    }
+    
     func schemeColors() -> [UInt32] {
         return self.colorsArray
     }

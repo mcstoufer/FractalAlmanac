@@ -28,6 +28,15 @@ extension UInt32 {
         return Color(red: red, green: green, blue: blue, opacity: alpha)
     }
     
+    var shaderColor: [Float] {
+        return [
+            Float((self>>24)&0xFF) / 255.0,
+            Float((self>>16)&0xFF) / 255.0,
+            Float((self>>8)&0xFF) / 255.0,
+            Float((self)&0xff) / 255.0
+        ]
+    }
+    
     var hue: Int {
         let red = (CGFloat) ( (self>>24)&0xFF )
         let green = (CGFloat) ( (self>>16)&0xFF )
