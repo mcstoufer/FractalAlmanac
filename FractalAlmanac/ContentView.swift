@@ -34,113 +34,135 @@ struct ContentView: View, PaletteProtocol {
     @StateObject var renderModel = RenderModel()
     @State private var activeSheet: ActiveSheet?
     @State private var activePalette: [Float] = UserDefaults.standard.lastSelectedPalette.paletteShaderColors
-    @State private var centerReal: Double = -0.743643887037158704752191506114774
-    @State private var centerImag: Double = 0.131825904205311970493132056385139
-    @State private var zoomRadius: Double = 1.2
     
-    // 2. Gesture tracking states to handle active drag/zoom interaction offsets
-    @State private var dragOffset: CGSize = .zero
-    @State private var activeMagnification: CGFloat = 1.0
+    @State private var centerReal: Double = -0.7
+    @State private var centerImag: Double = 0.0
+    @State private var baseZoom: Double = 1.0
     
-    @State private var zoomAnchorReal: Double? = nil
-    @State private var zoomAnchorImag: Double? = nil
+    @GestureState private var gestureTranslation: CGSize = .zero
+    @GestureState private var gestureScale: CGFloat = 1.0
+
+    @State private var zoomAnchorReal: Double = 0.0
+    @State private var zoomAnchorImag: Double = 0.0
+    @State private var isPinching: Bool = false
+    @State private var cyclePalette: Bool = false
+    
+    // PERSISTENT CACHES: Prevents the .onEnded reset/snapback defect
+    @State private var lastValidTranslation: CGSize = .zero
+    @State private var lastValidScale: CGFloat = 1.0
     
     var body: some View {
-        VStack(alignment: .leading) {
+//        VStack(alignment: .leading) {
             GeometryReader { geometry in
-                let size = geometry.size
+                let canvasSize = geometry.size
                 
-                // 1. Calculate active real-time viewport details in 64-bit Double depth
-                let aspect = size.width > 0 ? Double(size.width / size.height) : 1.0
-                let effectiveZoom = zoomRadius / Double(activeMagnification)
+                let baseDx = 3.0 / (canvasSize.width * baseZoom)
+                let baseDy = 3.0 / (canvasSize.height * baseZoom)
                 
-                let xSpan = effectiveZoom * max(aspect, 1.0) * 2.0
-                let ySpan = effectiveZoom * max(1.0 / aspect, 1.0) * 2.0
+                let activeScale = Double(gestureScale)
+ 
+                let zoomOffsetX = isPinching ? (zoomAnchorReal - centerReal) * (1.0 - 1.0 / activeScale) : 0.0
+                let zoomOffsetY = isPinching ? (zoomAnchorImag - centerImag) * (1.0 - 1.0 / activeScale) : 0.0
                 
-                // Live center adjustments reflecting dragging actions
-                let liveCenterReal = centerReal - (Double(dragOffset.width) / Double(size.width)) * xSpan
-                let liveCenterImag = centerImag - (Double(dragOffset.height) / Double(size.height)) * ySpan
+                let dragOffsetX = (Double(gestureTranslation.width) * baseDx) / activeScale
+                let dragOffsetY = (Double(gestureTranslation.height) * baseDy) / activeScale
                 
-                // 2. Compute exact step adjustments per physical device pixel
-                let dx = xSpan / Double(size.width)
-                let dy = ySpan / Double(size.height)
+                let activeCenterReal = centerReal - dragOffsetX + zoomOffsetX
+                let activeCenterImag = centerImag - dragOffsetY - zoomOffsetY
                 
-                // Split parameters carefully to prevent bits dropping during transmission
-                let cRealSplit = liveCenterReal.splitDouble
-                let cImagSplit = liveCenterImag.splitDouble
+                let dx = baseDx / activeScale
+                let dy = baseDy / activeScale
+                
+                let cRealSplit = activeCenterReal.splitDouble
+                let cImagSplit = activeCenterImag.splitDouble
                 let dxSplit = dx.splitDouble
                 let dySplit = dy.splitDouble
+//                Canvas { context, canvasSize in
+//                    guard size.width > 0, size.height > 0 else { return }
+//                let depthFactor = max(0, -log10(dx))
+                let dynamicIterations = 150.0 // Float(150 + Int(depthFactor * 75.0))
                 
-                Canvas { context, canvasSize in
-                    guard size.width > 0, size.height > 0 else { return }
-                    let depthFactor = max(0, -log10(zoomRadius))
-                    let dynamicIterations = Float(150 + Int(depthFactor * 75.0))
-                    
-                    // Fetch the metal function from ShaderLibrary
-                    let mandelbrotShader = Shader(
-                        function: ShaderLibrary.mandelbrot,
-                        arguments:[
-                            .float4(cRealSplit.hi, cRealSplit.lo, 0.0, 0.0), // Center Real
-                            .float4(cImagSplit.hi, cImagSplit.lo, 0.0, 0.0), // Center Imag
-                            .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
-                            .float2(Float(canvasSize.width), Float(canvasSize.height)),
-                            .float2(dynamicIterations, 0.0),
-                            .floatArray(activePalette)
-                        ]
-                    )
-                    
+                // Fetch the metal function from ShaderLibrary
+                let mandelbrotShader = Shader(
+                    function: ShaderLibrary.mandelbrot,
+                    arguments:[
+                        .float4(cRealSplit.hi, cRealSplit.lo, 0.0, 0.0), // Center Real
+                        .float4(cImagSplit.hi, cImagSplit.lo, 0.0, 0.0), // Center Imag
+                        .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
+                        .float2(Float(canvasSize.width), Float(canvasSize.height)),
+                        .float2(dynamicIterations, 0.0),
+                        .float(cyclePalette ? 1.0 : 0.0),
+                        .floatArray(activePalette)
+                    ]
+                )
+                
+                Color.black
+                    .colorEffect(mandelbrotShader)
+//                    .padding(0)
+//                    .frame(width: geometry.size.width, height: geometry.size.height)
                     // Render the shader to fill the full bounds
-                    context.fill(Path(CGRect(origin: .zero, size: canvasSize)), with: .shader(mandelbrotShader))
-                }
-                .ignoresSafeArea()
-                .gesture(
-                    SimultaneousGesture(
+//                    context.fill(Path(CGRect(origin: .zero, size: canvasSize)), with: .shader(mandelbrotShader))
+//                }
+                    .gesture(
                         // Pan Gesture
                         DragGesture(minimumDistance: 0)
-                            .onChanged { dragOffset = $0.translation }
-                            .onEnded { value in
-                                // Commit the final translation change directly to state coordinates
-                                centerReal -= (Double(value.translation.width) / Double(size.width)) * xSpan
-                                centerImag -= (Double(value.translation.height) / Double(size.height)) * ySpan
-                                dragOffset = .zero // Reset translation buffer
-                            },
-                        // Pinch to Zoom Gesture
-                        MagnifyGesture()
+                            .simultaneously(with: MagnifyGesture())
+                            .updating($gestureTranslation) { value, state, _ in
+                                state = value.first?.translation ?? .zero
+                            }
+                            .updating($gestureScale) { value, state, _ in
+                                state = value.second?.magnification ?? 1.0
+                            }
                             .onChanged { value in
-                                if zoomAnchorReal == nil {
-                                    let pctX = Double(value.startLocation.x / size.width)
-                                    let pctY = Double(value.startLocation.y / size.height)
-                                    zoomAnchorReal = liveCenterReal - (xSpan * 0.5) + (pctX * xSpan)
-                                    zoomAnchorImag = liveCenterImag + (ySpan * 0.5) - (pctY * ySpan)
+                                // 1. Continuously cache drag translation while active
+                                if let drag = value.first {
+                                    lastValidTranslation = drag.translation
                                 }
-                                activeMagnification = value.magnification
+                                
+                                if let magnify = value.second {
+                                    lastValidScale = magnify.magnification
+                                    
+                                    if !isPinching {
+                                        let screenX = magnify.startAnchor.x * canvasSize.width
+                                        let screenY = magnify.startAnchor.y * canvasSize.height
+                                        
+                                        // B. Map that screen point directly into its permanent location in Fractal Space
+                                        zoomAnchorReal = centerReal + Double(screenX - canvasSize.width / 2) * baseDx
+                                        zoomAnchorImag = centerImag + Double(canvasSize.height / 2 - screenY) * baseDy
+                                        isPinching = true
+                                    }
+                                }
                             }
                             .onEnded { value in
-                                if let anchorR = zoomAnchorReal, let anchorI = zoomAnchorImag {
-                                    let newZoomRadius = zoomRadius / Double(value.magnification)
-                                    let newXSpan = newZoomRadius * max(aspect, 1.0) * 2.0
-                                    let newYSpan = newZoomRadius * max(1.0 / aspect, 1.0) * 2.0
-                                    
-                                    let pctX = Double(value.startLocation.x / size.width)
-                                    let pctY = Double(value.startLocation.y / size.height)
-                                    
-                                    centerReal = anchorR + (0.5 - pctX) * newXSpan
-                                    centerImag = anchorI - (0.5 - pctY) * newYSpan
-                                    zoomRadius = newZoomRadius
-                                }
-                                activeMagnification = 1.0
-                                zoomAnchorReal = nil
-                                zoomAnchorImag = nil
-                                dragOffset = .zero
+                                // Calculate final states explicitly matching the exact algebra run above
+                                let finalScale = Double(lastValidScale)
+                                
+                                let finalZoomX = isPinching ? (zoomAnchorReal - centerReal) * (1.0 - 1.0 / finalScale) : 0.0
+                                let finalZoomY = isPinching ? (zoomAnchorImag - centerImag) * (1.0 - 1.0 / finalScale) : 0.0
+                                
+                                let finalDragX = (Double(lastValidTranslation.width) * baseDx) / finalScale
+                                let finalDragY = (Double(lastValidTranslation.height) * baseDy) / finalScale
+                                
+                                // Mutate camera state precisely once
+                                centerReal = centerReal - finalDragX + finalZoomX
+                                centerImag = centerImag - finalDragY - finalZoomY
+                                baseZoom = baseZoom * finalScale
+                                
+                                // Tear down structural state variables cleanly for the next gesture lifecycle
+                                isPinching = false
+                                zoomAnchorReal = 0.0
+                                zoomAnchorImag = 0.0
+                                lastValidTranslation = .zero
+                                lastValidScale = 1.0
                             }
                     )
-                )
             }
+            .ignoresSafeArea()
             // Attach the custom overlay toolbar
             .overlay(alignment: .bottomTrailing) {
                 floatingToolbar
             }
-        }
+//        }
     }
     
     private var floatingToolbar: some View {
@@ -210,6 +232,10 @@ struct ContentView: View, PaletteProtocol {
     // MARK - Palette Protocol
     func paletteSelectionDidChange(p:any ColorSchemeProtocol) {
         activePalette = p.paletteShaderColors
+    }
+    
+    func paletteCycleDidChange(b: Bool) {
+        cyclePalette = b
     }
     
     func lastSelectedPalette() -> (any ColorSchemeProtocol)? {

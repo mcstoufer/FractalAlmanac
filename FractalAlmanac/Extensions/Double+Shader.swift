@@ -6,9 +6,12 @@
 //
 
 extension Double {
-    var splitDouble: (hi: Float, lo: Float) {
-        let hi = Float(self)
-        let lo = Float(self - Double(hi))
+    var splitDouble: (hi: Double, lo: Double) {
+        let splitMultiplier = 16777216.0 + 1.0
+        
+        let c = self * splitMultiplier
+        let hi = c - (c - self)
+        let lo = self - hi
         return (hi, lo)
     }
 }

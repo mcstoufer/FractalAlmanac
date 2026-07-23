@@ -104,6 +104,9 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
 //        }
     }
     
+    func paletteCycleDidChange(b: Bool) {
+        //
+    }
     
     func lastSelectedPalette() -> (any ColorSchemeProtocol)? {
         return currentPallete

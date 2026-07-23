@@ -26,8 +26,11 @@ struct InfoDisplay: View {
                 Button("Dismiss") {
                     hasSeenOnboarding = true
                 }
+                .padding([.trailing, .bottom], 8)
             }
+            .frame(height: 45)
         }
+        .background(.white)
         .padding()
     }
     

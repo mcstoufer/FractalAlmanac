@@ -10,6 +10,8 @@ import Foundation
 let kLastSelectedModel = "lastSelectedModel"
 let kLastSelectedPalette = "lastSelectedPalette"
 let kFirstLaunch = "has_launch_before"
+let kLastPaletteCycle = "lastPaletteCycle"
+
 extension UserDefaults {
     
     var hasLaunchedBefore: Bool {
@@ -48,6 +50,15 @@ extension UserDefaults {
         }
         set(newPalette) {
             UserDefaults.standard.set(newPalette.paletteName, forKey: kLastSelectedPalette)
+        }
+    }
+    
+    var lastPaletteCycle: Bool {
+        get {
+            return UserDefaults.standard.bool(forKey: kLastPaletteCycle)
+        }
+        set(newCycle) {
+            UserDefaults.standard.set(newCycle, forKey: kLastPaletteCycle)
         }
     }
 }

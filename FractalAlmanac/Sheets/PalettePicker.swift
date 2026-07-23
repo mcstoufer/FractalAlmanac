@@ -35,7 +35,8 @@ struct PalettePickerCell: View {
 struct PalettePicker: View, PaletteBuilderProtocol {
     @State private var selectedPalette: UnifiedRowItem?
     @State private var showBuilderSheet = false
-
+    @State private var cyclePalette = UserDefaults.standard.lastPaletteCycle
+    
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) private var viewContext
 
@@ -60,6 +61,14 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     
     var body: some View {
         VStack(alignment: .leading) {
+            Toggle("Cycle Palette Colors", isOn: $cyclePalette)
+                .padding([.top, .leading, .trailing], 10)
+                .onChange(of: cyclePalette) { oldValue, newValue in
+                    paletteDelegate?.paletteCycleDidChange(b: newValue)
+                    UserDefaults.standard.lastPaletteCycle = newValue
+                    dismiss()
+                }
+            
             List(selection: $selectedPalette) {
                 Section(header: Text(PaletteStyle.Classic.rawValue)
                     .font(.title3)
