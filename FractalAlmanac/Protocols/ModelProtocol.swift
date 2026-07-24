@@ -6,7 +6,7 @@
 //
 
 
-protocol ModelProtocol: AnyObject {
+protocol ModelProtocol {
     func modelSelectionDidChange(f:FractalModel)
     func lastSelectedModel() -> (FractalModel)?
 }

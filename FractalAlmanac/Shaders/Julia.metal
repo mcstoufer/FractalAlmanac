@@ -1,8 +1,8 @@
 //
-//  Mandelbrot.metal
+//  Julia.metal
 //  FractalAlmanac
 //
-//  Created by Martin Stoufer on 7/20/26.
+//  Created by Martin Stoufer on 7/23/26.
 //
 
 #include <metal_stdlib>
@@ -10,20 +10,21 @@
 
 using namespace metal;
 
-[[ stitchable ]] half4 mandelbrot(float2 position,
-                                  half4 currentColor,
-                                  float4 centerRealSplit,   // centerReal.hi, centerReal.lo
-                                  float4 centerImagSplit,   // centerImag.hi, centerImag.lo
-                                  float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
-                                  float4 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
-                                  float2 size,
-                                  float2 tuningData,
-                                  float cycle,
-                                  device const float *colors,
-                                  int colorsCount) {
+
+[[ stitchable ]] half4 julia(float2 position,
+                             half4 currentColor,
+                             float4 centerRealSplit,   // centerReal.hi, centerReal.lo
+                             float4 centerImagSplit,   // centerImag.hi, centerImag.lo
+                             float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
+                             float4 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
+                             float2 size,
+                             float2 tuningData,
+                             float cycle,
+                             device const float *colors,
+                             int colorsCount) {
     int totalColors = colorsCount / 4;
     uint32_t maxIterations = static_cast<uint32_t>(tuningData.x);
-
+    
     float offsetX = position.x - (size.x * 0.5f);
     float offsetY = position.y - (size.y * 0.5f);
     
@@ -36,13 +37,16 @@ using namespace metal;
     df_float offset_x_df = { offsetX, 0.0f };
     df_float offset_y_df = { offsetY, 0.0f };
     
-    df_float cx = df_add(c_real_center, df_mul(offset_x_df, dx));
-    df_float cy = df_add(c_imag_center, df_mul(offset_y_df, dy));
+    // In Julia Set, the pixel positions determine the starting Z values (zx, zy)
+    df_float zx = df_add(c_real_center, df_mul(offset_x_df, dx));
+    df_float zy = df_add(c_imag_center, df_mul(offset_y_df, dy));
     
-    df_float zx = { 0.0f, 0.0f };
-    df_float zy = { 0.0f, 0.0f };
+    // The constant C is passed uniformly and stays fixed for all pixels
+    df_float cx = { cConstantSplit.x, cConstantSplit.y };
+    df_float cy = { cConstantSplit.z, cConstantSplit.w };
+    
     uint32_t i = 0;
-
+    
     for (; i < maxIterations; i++) {
         df_float zx2 = df_mul(zx, zx);
         df_float zy2 = df_mul(zy, zy);

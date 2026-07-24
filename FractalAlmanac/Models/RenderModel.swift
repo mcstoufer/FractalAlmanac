@@ -18,13 +18,13 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     
     var extents = Extent.newExtentFrom(rect: CGRectZero)
 
-    lazy var dataModel = UserDefaults.standard.lastSelectedModel.newDataModel(
-        forSize: CGSize(
-            width: minExtent,
-            height: minExtent
-        ),
-        listener:self
-    )
+//    lazy var dataModel = UserDefaults.standard.lastSelectedModel.newDataModel(
+//        forSize: CGSize(
+//            width: minExtent,
+//            height: minExtent
+//        ),
+//        listener:self
+//    )
 
 //    private var pastImages = [UIImage]()
     private var currentPallete:(any ColorSchemeProtocol)?
@@ -48,27 +48,27 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
         return scene.effectiveGeometry.interfaceOrientation
     }
     
-    func startRendering() {
-        Task {
-            if self.isRendering == true {
-                return
-            }
-            
-            //        let start = DispatchTime.now()
-            guard let renderedImage = await service.draw(
-                width: Int(self.minExtent),
-                height: Int(self.minExtent),
-                dataModel: dataModel
-            ) else {
-                return
-            }
-            
-            dataModel.release()
-            //        let end = DispatchTime.now()
-            self.newImage = Image(uiImage: renderedImage)
-            self.isRendering = false
-        }
-    }
+//    func startRendering() {
+//        Task {
+//            if self.isRendering == true {
+//                return
+//            }
+//            
+//            //        let start = DispatchTime.now()
+//            guard let renderedImage = await service.draw(
+//                width: Int(self.minExtent),
+//                height: Int(self.minExtent),
+//                dataModel: dataModel
+//            ) else {
+//                return
+//            }
+//            
+//            dataModel.release()
+//            //        let end = DispatchTime.now()
+//            self.newImage = Image(uiImage: renderedImage)
+//            self.isRendering = false
+//        }
+//    }
     
     // MARK: - DataModelRenderProtocol
     func renderingHasBegun() {
@@ -90,14 +90,14 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     }
     
     func extentsHaveRefreshed() async {
-        startRendering()
+//        startRendering()
     }
     
     // MARK: - PaletteProtocol
     func paletteSelectionDidChange(p: any ColorSchemeProtocol) {
         currentPallete = p
         renderingProgress = 0.0
-        dataModel.setNewPallete(p: p)
+//        dataModel.setNewPallete(p: p)
         newImage = nil
 //        Task {
 //            startRendering()
@@ -116,10 +116,10 @@ class RenderModel: ObservableObject, DataModelRenderProtocol, PaletteProtocol, M
     func modelSelectionDidChange(f: FractalModel) {
         currentModel = f
         renderingProgress = 0.0
-        dataModel = f.newDataModel(forSize: CGSize(width: minExtent, height: minExtent), listener: self)
+//        dataModel = f.newDataModel(forSize: CGSize(width: minExtent, height: minExtent), listener: self)
         newImage = nil
         Task {
-            startRendering()
+//            startRendering()
         }
     }
     
