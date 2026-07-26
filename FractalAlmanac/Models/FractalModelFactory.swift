@@ -63,19 +63,34 @@ extension FractalModel {
                 return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return Shader(function: ShaderLibrary.julia, arguments: shaderArguments)
+            case .Phoenix, .PhoenixJ, .PhoenixM:
+                return Shader(function: ShaderLibrary.phoenix, arguments: shaderArguments)
             default:
                 return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
         }
     }
     
-    static func initialCenter(model: FractalModel) -> (centerReal: Double, centerImag: Double) {
-        switch model {
+    var initialCenter: (centerReal: Double, centerImag: Double) {
+        switch self {
             case .Mandelbrot:
                 return (-0.7, 0.0)
-            case .JuliaA:
+            case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return (0.0, 0.0)
             default:
                 return (0.0, 0.0)
+        }
+    }
+    
+    var baseZoom: Double {
+        switch self {
+            case .Mandelbrot:
+                return 1.0
+            case .JuliaA:
+                return 1.2
+            case .JuliaB:
+                return 0.7
+            default:
+                return 1.0
         }
     }
     
@@ -99,6 +114,10 @@ extension FractalModel {
                 return .float4(0.318623, 0.0, -0.044699, 0.0)
             case .JuliaO:
                 return .float4(0.318623, 0.0, -0.429799, 0.0)
+            case .PhoenixJ, .Phoenix:
+                return .float4(0.56667, 0.0, -0.5, 0.0)
+            case .PhoenixM:
+                return .float4(0.356338, 0.0, -1.209169, 0.0)
             default:
                 return .float4(0.0, 0.0, 0.0, 0.0)
         }
@@ -126,6 +145,12 @@ extension FractalModel {
                 return .float2(256, 0)
             case .JuliaO:
                 return .float2(48, 0)
+            case .Phoenix:
+                return .float2(128, 0)
+            case .PhoenixJ:
+                return .float2(8, 0)
+            case .PhoenixM:
+                return .float2(64, 0)
             default:
                 return .float2(150, 0)
         }

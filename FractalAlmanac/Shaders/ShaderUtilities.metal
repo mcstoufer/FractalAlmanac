@@ -24,6 +24,24 @@ inline df_float df_add(df_float a, df_float b) {
     return df_float{s_norm, e_norm};
 }
 
+inline df_float df_sub(df_float a, df_float b) {
+    // 1. Compute the structural difference of the high parts
+    float s_hi = a.hi - b.hi;
+    
+    // 2. Compute the exact floating-point error of that high subtraction
+    float v = s_hi - a.hi;
+    float err_hi = (a.hi - (s_hi - v)) - (b.hi + v);
+    
+    // 3. Accumulate the low parts and the high part error
+    float s_lo = (a.lo - b.lo) + err_hi;
+    
+    // 4. Renormalize the result into a clean high/low split
+    float th = s_hi + s_lo;
+    float tl = s_lo - (th - s_hi);
+    
+    return { th, tl };
+}
+
 inline float2 df_split(float a) {
     // 131073.0f represents 2^17 + 1, perfect for splitting 24-bit mantissas
     float c = a * 131073.0f;

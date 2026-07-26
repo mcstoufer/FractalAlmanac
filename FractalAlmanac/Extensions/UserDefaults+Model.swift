@@ -26,10 +26,10 @@ extension UserDefaults {
     var lastSelectedModel: FractalModel {
         get {
             guard let f = UserDefaults.standard.string(forKey: kLastSelectedModel) else {
-                return .Mandelbrot
+                return .JuliaA
             }
             guard let pr = FractalModel(rawValue: f) else {
-                return .Mandelbrot
+                return .JuliaA
             }
             return pr
         }

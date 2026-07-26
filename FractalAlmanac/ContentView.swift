@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-internal import CoreData
 import Metal
 
 enum ActiveSheet: Identifiable {
@@ -29,23 +28,46 @@ enum ActiveSheet: Identifiable {
 }
 
 struct ViewModelState: Equatable {
-    var centerReal: Double = FractalModel.initialCenter(model: UserDefaults.standard.lastSelectedModel).centerReal
-    var centerImag: Double = FractalModel.initialCenter(model: UserDefaults.standard.lastSelectedModel).centerImag
-    var isPinching: Bool = false
-    var cyclePalette: Bool = UserDefaults.standard.lastPaletteCycle
-    var baseZoom: Double = 1.0
-    var fractalModel: FractalModel = UserDefaults.standard.lastSelectedModel
-    var activePalette: [Float] = UserDefaults.standard.lastSelectedPalette.paletteShaderColors
-    var zoomAnchorReal: Double = 0.0
-    var zoomAnchorImag: Double = 0.0
-    var lastValidTranslation: CGSize = .zero
-    var lastValidScale: CGFloat = 1.0
+    var centerReal: Double
+    var centerImag: Double
+    var isPinching: Bool
+    var cyclePalette: Bool
+    var baseZoom: Double
+    var fractalModel: FractalModel
+    var activePalette: [Float]
+    var zoomAnchorReal: Double
+    var zoomAnchorImag: Double
+    var lastValidTranslation: CGSize
+    var lastValidScale: CGFloat
+    
+    init(
+        centerReal: Double = 0,
+        centerImag: Double = 0,
+        isPinching: Bool = false,
+        cyclePalette: Bool = UserDefaults.standard.lastPaletteCycle,
+        baseZoom: Double? = 1.0,
+        fractalModel: FractalModel = UserDefaults.standard.lastSelectedModel,
+        activePalette: [Float] = UserDefaults.standard.lastSelectedPalette.paletteShaderColors,
+        zoomAnchorReal: Double = 0.0,
+        zoomAnchorImag: Double = 0.0,
+        lastValidTranslation: CGSize = .zero,
+        lastValidScale: CGFloat = 1.0
+    ) {
+        self.fractalModel = fractalModel
+        self.centerReal = self.fractalModel.initialCenter.centerReal
+        self.centerImag = self.fractalModel.initialCenter.centerImag
+        self.isPinching = isPinching
+        self.cyclePalette = cyclePalette
+        self.baseZoom = self.fractalModel.baseZoom
+        self.activePalette = activePalette
+        self.zoomAnchorReal = zoomAnchorReal
+        self.zoomAnchorImag = zoomAnchorImag
+        self.lastValidTranslation = lastValidTranslation
+        self.lastValidScale = lastValidScale
+    }
 }
 
 struct ContentView: View, PaletteProtocol, ModelProtocol {
-    @Environment(\.managedObjectContext) private var viewContext
-    
-    @StateObject var renderModel = RenderModel()
     @State private var activeSheet: ActiveSheet?
     @State private var state = ViewModelState()
     
@@ -227,7 +249,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
     // MARK - Model Protocol
     func modelSelectionDidChange(f: FractalModel) {
         UserDefaults.standard.lastSelectedModel = f
-        let centers = FractalModel.initialCenter(model: f)
+        let centers = f.initialCenter
         state.centerReal = centers.centerReal
         state.centerImag = centers.centerImag
         state.baseZoom = 1.0
@@ -237,9 +259,8 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
     func lastSelectedModel() -> FractalModel? {
         return UserDefaults.standard.lastSelectedModel
     }
-    
 }
 
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView()
 }
