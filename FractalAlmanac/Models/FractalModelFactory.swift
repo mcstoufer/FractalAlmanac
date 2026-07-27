@@ -93,6 +93,8 @@ extension FractalModel {
                 return 1.2
             case .JuliaB:
                 return 0.7
+            case .SanMarcos:
+                return 2.65
             default:
                 return 1.0
         }
@@ -129,7 +131,7 @@ extension FractalModel {
             case .SanMarcos:
                 //                dModel.P = 2.998122
                 //                dModel.Q = 0.004298
-                return .float4(-0.75, 0.0, 0.05, 0)
+                return .float4(2.998122, 0.0, 0.004298, 0)
 //                return .float4(2.998122, 0.0, 0.004298, 0)
             default:
                 return .float4(0.0, 0.0, 0.0, 0.0)

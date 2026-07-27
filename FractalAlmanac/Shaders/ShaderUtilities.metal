@@ -13,6 +13,12 @@ struct df_float {
     float lo;
 };
 
+inline float2 quickTwoSum(float a, float b) {
+    float s = a + b;
+    float e = b - (s - a);
+    return float2(s, e);
+}
+
 inline df_float df_add(df_float a, df_float b) {
     float s = a.hi + b.hi;
     float v = s - a.hi;
@@ -22,6 +28,13 @@ inline df_float df_add(df_float a, df_float b) {
     float s_norm = s + e;
     float e_norm = e - (s_norm - s);
     return df_float{s_norm, e_norm};
+}
+
+inline float2 f2_add(float2 a, float2 b) {
+    float s = a.x + b.x;
+    float v = s - a.x;
+    float e = (a.x - (s - v)) + (b.x - v) + a.y + b.y;
+    return quickTwoSum(s, e);
 }
 
 inline df_float df_sub(df_float a, df_float b) {
@@ -40,6 +53,13 @@ inline df_float df_sub(df_float a, df_float b) {
     float tl = s_lo - (th - s_hi);
     
     return { th, tl };
+}
+
+inline float2 f2_sub(float2 a, float2 b) {
+    float s = a.x - b.x;
+    float v = s - a.x;
+    float e = (a.x - (s - v)) - (b.x + v) + a.y - b.y;
+    return quickTwoSum(s, e);
 }
 
 inline float2 df_split(float a) {
@@ -64,6 +84,14 @@ inline df_float df_mul(df_float a, df_float b) {
     float s_norm = p + e;
     float e_norm = e - (s_norm - p);
     return df_float{s_norm, e_norm};
+}
+
+// Helper function for split-precision multiplication
+inline float2 f2_mul(float2 a, float2 b) {
+    float c = a.x * b.x;
+    float c_exp = fma(a.x, b.x, -c);
+    c_exp += a.x * b.y + a.y * b.x;
+    return quickTwoSum(c, c_exp);
 }
 
 inline float2 quick_two_sum(float a, float b) {

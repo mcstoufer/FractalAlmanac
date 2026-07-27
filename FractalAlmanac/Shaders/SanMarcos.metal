@@ -10,15 +10,13 @@
 
 using namespace metal;
 
-inline float2 quickTwoSum(float a, float b) {
-    float s = a + b;
-    float v = s - a;
-    float e = (a - (s - v)) + (b - v);
-    return float2(s, e);
+// Helper function to reconstruct an emulated double from high and low float components
+inline float floatFromSplit(float2 split) {
+    return split.x + split.y;
 }
 
 [[ stitchable ]] half4 sanmarcos(float2 position,
-                              half4 currentColor,
+                              half4 currentColor,       // Unused
                               float4 centerRealSplit,   // centerReal.hi, centerReal.lo
                               float4 centerImagSplit,   // centerImag.hi, centerImag.lo
                               float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
@@ -28,76 +26,73 @@ inline float2 quickTwoSum(float a, float b) {
                               float cycle,
                               device const float *colors,
                               int colorsCount) {
-    // Extract iteration limit from parameters
-    int maxIterations = int(tuningData.x);
+    // Extract emulated double constants from your split float structures
+    float2 centerReal = centerRealSplit.xy;
+    float2 centerImag = centerImagSplit.xy;
+    float2 dx = scaleSplit.xy;
+    float2 dy = scaleSplit.zw;
+    float2 P  = cConstantSplit.xy;
+    float2 Q  = cConstantSplit.zw;
     
-    // 1. Calculate relative screen offset from center pixel (size * 0.5)
-    float2 deltaPixels = position - (size * 0.5);
+    int maxIters = int(tuningData.x);
     
-    // 2. Compute high-precision Initial Z coordinate using Split-Precision math
-    // Z_real = centerReal + deltaPixels.x * scale_dx
-    float dx_prod_hi = deltaPixels.x * scaleSplit.x;
-    float dx_prod_lo = deltaPixels.x * scaleSplit.y;
-    float2 zr_split  = quickTwoSum(centerRealSplit.x, dx_prod_hi);
-    float z_real     = zr_split.x + (zr_split.y + centerRealSplit.y + dx_prod_lo);
+    // Core Image coordinate setup: calculate pixel offset from the viewport center
+    float2 halfSize = size * 0.5f;
+    float2 pixelOffset = position - halfSize;
     
-    // Z_imag = centerImag + deltaPixels.y * scale_dy
-    float dy_prod_hi = deltaPixels.y * scaleSplit.z;
-    float dy_prod_lo = deltaPixels.y * scaleSplit.w;
-    float2 zi_split  = quickTwoSum(centerImagSplit.x, dy_prod_hi);
-    float z_imag     = zi_split.x + (zi_split.y + centerImagSplit.y + dy_prod_lo);
+    // Map current coordinate using emulated high-precision delta scales
+    // X = centerReal + (offset.x * dx)
+    float2 X = f2_add(centerReal, f2_mul(float2(pixelOffset.x, 0.0f), dx));
+    // Core Image matches UIKit coordinate spaces (Y is flipped relative to raw Metal)
+    // Y = centerImag + (offset.y * dy)
+    float2 Y = f2_add(centerImag, f2_mul(float2(pixelOffset.y, 0.0f), dy));
     
-    // 3. Extract the locked San Marcos constant components
-    float c_real = cConstantSplit.x + cConstantSplit.y;
-    float c_imag = cConstantSplit.z + cConstantSplit.w;
+    bool isInitiallyPositiveY = (Y.x > 0.0f);
     
-    // 4. Run the Core Fractal Escape Loop
-    int iteration = 0;
-    float zr2 = z_real * z_real;
-    float zi2 = z_imag * z_imag;
+    float2 XSquare = float2(0.0f, 0.0f);
+    float2 YSquare = float2(0.0f, 0.0f);
+    int colorIndex = 0;
     
-    while (iteration < maxIterations && (zr2 + zi2) < 4.0) {
-        float next_real = zr2 - zi2 + c_real;
-        z_imag = 2.0 * z_real * z_imag + c_imag;
-        z_real = next_real;
+    // Core high-precision fractal computation loop
+    while (colorIndex < maxIters && (XSquare.x + YSquare.x) < 4.0f) {
+        XSquare = f2_mul(X, X);
+        YSquare = f2_mul(Y, Y);
         
-        zr2 = z_real * z_real;
-        zi2 = z_imag * z_imag;
-        iteration++;
+        float2 temp_sq = f2_sub(YSquare, XSquare);
+        float2 temp_xy = f2_mul(float2(2.0f, 0.0f), f2_mul(X, Y));
+        
+        // YTemp = (Q * (temp_sq + X)) - (P * (temp_xy - Y))
+        float2 termY1 = f2_mul(Q, f2_add(temp_sq, X));
+        float2 termY2 = f2_mul(P, f2_sub(temp_xy, Y));
+        float2 YTemp  = f2_sub(termY1, termY2);
+        
+        // X = (P * (temp_sq + X)) + (Q * (temp_xy - Y))
+        float2 termX1 = f2_mul(P, f2_add(temp_sq, X));
+        float2 termX2 = f2_mul(Q, f2_sub(temp_xy, Y));
+        X = f2_add(termX1, termX2);
+        
+        Y = YTemp;
+        colorIndex++;
     }
     
-    // 5. If it stays inside the set, return background/inner color
-    if (iteration == maxIterations) {
-        return half4(0.0h, 0.0h, 0.0h, 1.0h);
+    // Dynamic palette colors count calculation (Assuming RGBA float buffer -> 4 elements per palette color)
+    int paletteCount = colorsCount / 4;
+    
+    if (colorIndex >= maxIters) {
+        float magnitude = abs(XSquare.x + YSquare.x);
+        int magnitudeSq = int(magnitude * 100.0f);
+        colorIndex = (magnitudeSq % (paletteCount - 1)) + 1;
+    } else {
+        colorIndex = paletteCount - 1;
     }
     
-    // 6. Calculate Smooth / Continuous Iteration Count
-    // Formula: nu = log(log(modulus) / log(2)) / log(2)
-    float log_zn = log(zr2 + zi2) / 2.0;
-    float nu = log(log_zn / log(2.0)) / log(2.0);
+    // Mirroring/shifting index modification for upper layout half
+    if (isInitiallyPositiveY) {
+        int shift = int(cycle) + (paletteCount / 2);
+        colorIndex = (colorIndex + shift) % paletteCount;
+    }
     
-    // Smooth iteration value can fall slightly between discrete steps
-    float smooth_iteration = float(iteration) + 1.0 - nu;
-    
-    // Prevent negative bounds or overflows out of the iteration space
-    smooth_iteration = max(0.0, smooth_iteration);
-    
-    // 7. Map smooth iteration count to the 1D Color Buffer array
-    // Normalize step using cycle offset parameter
-    float norm_t = smooth_iteration / float(maxIterations);
-    float mapped_index = fract(norm_t + cycle) * float(colorsCount - 1);
-    
-    int idx0 = int(floor(mapped_index));
-    int idx1 = min(idx0 + 1, colorsCount - 1);
-    float interpolation_factor = fract(mapped_index);
-    
-    // Fetch elements assuming 1D float array stores packed RGB sequences [R0,G0,B0,R1,G1,B1...]
-    int base0 = idx0 * 3;
-    int base1 = idx1 * 3;
-    
-    half3 color0 = half3(colors[base0], colors[base0 + 1], colors[base0 + 2]);
-    half3 color1 = half3(colors[base1], colors[base1 + 1], colors[base1 + 2]);
-    half3 final_rgb = mix(color0, color1, half(interpolation_factor));
-    
-    return half4(final_rgb, 1.0h);
+    // Protect color index constraints before palette evaluation
+    colorIndex = clamp(colorIndex, 0, paletteCount - 1);
+    return color_lookup(colors, colorIndex, maxIters, paletteCount, colorsCount, cycle);
 }
