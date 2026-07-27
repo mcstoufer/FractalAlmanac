@@ -77,13 +77,6 @@ class Bookmark: NSManagedObject, SnapshotObject {
         }
     }
     
-    func drawingExtents() -> Extent {
-        if let extents {
-            return extents.toExtent()
-        }
-        return CGRectZero.toExtent()
-    }
-    
     func image() -> UIImage {
         return UIImage(data: thumbnail ?? Data()) ?? UIImage()
     }

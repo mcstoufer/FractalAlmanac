@@ -23,7 +23,6 @@ struct Snapshot {
     @ScaledThumbnail var thumbnail: UIImage
     var model: String
     var palette: any ColorSchemeProtocol
-    var extents:Extent
 }
 
 extension Snapshot: SnapshotObject {
@@ -37,10 +36,6 @@ extension Snapshot: SnapshotObject {
     
     func colorScheme() -> any ColorSchemeProtocol {
         return palette
-    }
-    
-    func drawingExtents() -> Extent {
-        return extents
     }
     
     func image() -> UIImage {

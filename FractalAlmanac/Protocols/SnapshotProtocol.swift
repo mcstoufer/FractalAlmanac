@@ -16,6 +16,5 @@ protocol SnapshotObject {
     func snapshotName() -> String
     func modelName() -> String
     func colorScheme() -> any ColorSchemeProtocol
-    func drawingExtents() -> Extent
     func image() -> UIImage
 }

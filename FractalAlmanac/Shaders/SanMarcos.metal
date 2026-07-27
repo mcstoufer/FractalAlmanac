@@ -27,25 +27,20 @@ inline float floatFromSplit(float2 split) {
                               device const float *colors,
                               int colorsCount) {
     // Extract emulated double constants from your split float structures
-    float2 centerReal = centerRealSplit.xy;
-    float2 centerImag = centerImagSplit.xy;
-    float2 dx = scaleSplit.xy;
-    float2 dy = scaleSplit.zw;
     float2 P  = cConstantSplit.xy;
     float2 Q  = cConstantSplit.zw;
     
     int maxIters = int(tuningData.x);
     
     // Core Image coordinate setup: calculate pixel offset from the viewport center
-    float2 halfSize = size * 0.5f;
-    float2 pixelOffset = position - halfSize;
+    float2 pixelOffset = position - size * 0.5f;
     
     // Map current coordinate using emulated high-precision delta scales
     // X = centerReal + (offset.x * dx)
-    float2 X = f2_add(centerReal, f2_mul(float2(pixelOffset.x, 0.0f), dx));
+    float2 X = f2_add(centerRealSplit.xy, f2_mul(float2(pixelOffset.x, 0.0f), scaleSplit.xy));
     // Core Image matches UIKit coordinate spaces (Y is flipped relative to raw Metal)
     // Y = centerImag + (offset.y * dy)
-    float2 Y = f2_add(centerImag, f2_mul(float2(pixelOffset.y, 0.0f), dy));
+    float2 Y = f2_add(centerImagSplit.xy, f2_mul(float2(pixelOffset.y, 0.0f), scaleSplit.zw));
     
     bool isInitiallyPositiveY = (Y.x > 0.0f);
     
