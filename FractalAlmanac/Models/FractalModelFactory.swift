@@ -65,8 +65,10 @@ extension FractalModel {
                 return Shader(function: ShaderLibrary.julia, arguments: shaderArguments)
             case .Phoenix, .PhoenixJ, .PhoenixM:
                 return Shader(function: ShaderLibrary.phoenix, arguments: shaderArguments)
-            default:
-                return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
+            case .Dragon:
+                return Shader(function: ShaderLibrary.dragon, arguments: shaderArguments)
+            case .SanMarcos:
+                return Shader(function: ShaderLibrary.sanmarcos, arguments: shaderArguments)
         }
     }
     
@@ -76,6 +78,8 @@ extension FractalModel {
                 return (-0.7, 0.0)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return (0.0, 0.0)
+            case .SanMarcos:
+                return (0.5, 0.0)
             default:
                 return (0.0, 0.0)
         }
@@ -118,6 +122,15 @@ extension FractalModel {
                 return .float4(0.56667, 0.0, -0.5, 0.0)
             case .PhoenixM:
                 return .float4(0.356338, 0.0, -1.209169, 0.0)
+            case .Dragon:
+//                return .float4(1.646009, 0.0, 0.967049, 0.0)
+//                return .float4(-0.8, 0.0, 0.156, 0.0)
+                return .float4(-0.12375, 0.0, 0.74486, 0.0)
+            case .SanMarcos:
+                //                dModel.P = 2.998122
+                //                dModel.Q = 0.004298
+                return .float4(-0.75, 0.0, 0.05, 0)
+//                return .float4(2.998122, 0.0, 0.004298, 0)
             default:
                 return .float4(0.0, 0.0, 0.0, 0.0)
         }
@@ -151,8 +164,10 @@ extension FractalModel {
                 return .float2(8, 0)
             case .PhoenixM:
                 return .float2(64, 0)
-            default:
-                return .float2(150, 0)
+            case .Dragon:
+                return .float2(256, 0)
+            case .SanMarcos:
+                return .float2(64, 0)
         }
     }
     

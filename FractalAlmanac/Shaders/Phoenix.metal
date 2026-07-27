@@ -80,19 +80,5 @@ using namespace metal;
         zx_prev = next_zx_prev;
         zy_prev = next_zy_prev;
         }
-    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
-    
-    int colorIndex = 0;
-    if (cycle == 1) {
-        colorIndex = i % totalColors;
-    } else {
-        colorIndex = (i * totalColors / maxIterations);
-    }
-    
-    int byteOffset = colorIndex * 4;
-    if (byteOffset >= colorsCount - 3) {
-        byteOffset = colorsCount - 4;
-    }
-    
-    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
+    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
 }

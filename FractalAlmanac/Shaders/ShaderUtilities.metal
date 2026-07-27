@@ -72,3 +72,23 @@ inline float2 quick_two_sum(float a, float b) {
     float e = b - v;
     return float2(s, e);
 }
+
+inline half4 color_lookup(device const float *colors, uint32_t i,
+                          float maxIterations, int totalColors,
+                          int colorsCount, bool cycle) {
+    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
+    
+    int colorIndex = 0;
+    if (cycle == 1) {
+        colorIndex = i % totalColors;
+    } else {
+        colorIndex = (i * totalColors / maxIterations);
+    }
+    
+    int byteOffset = colorIndex * 4;
+    if (byteOffset >= colorsCount - 3) {
+        byteOffset = colorsCount - 4;
+    }
+    
+    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
+}

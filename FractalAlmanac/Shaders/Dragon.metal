@@ -1,8 +1,8 @@
 //
-//  Julia.metal
+//  Dragon.metal
 //  FractalAlmanac
 //
-//  Created by Martin Stoufer on 7/23/26.
+//  Created by Martin Stoufer on 7/27/26.
 //
 
 #include <metal_stdlib>
@@ -10,8 +10,7 @@
 
 using namespace metal;
 
-
-[[ stitchable ]] half4 julia(float2 position,
+[[ stitchable ]] half4 dragon(float2 position,
                              half4 currentColor,
                              float4 centerRealSplit,   // centerReal.hi, centerReal.lo
                              float4 centerImagSplit,   // centerImag.hi, centerImag.lo
@@ -37,11 +36,11 @@ using namespace metal;
     df_float offset_x_df = { offsetX, 0.0f };
     df_float offset_y_df = { offsetY, 0.0f };
     
-    // In Julia Set, the pixel positions determine the starting Z values (zx, zy)
+    // For a Dragon (Julia) set, pixel positions map to the starting variables Z_0
     df_float zx = df_add(c_real_center, df_mul(offset_x_df, dx));
     df_float zy = df_add(c_imag_center, df_mul(offset_y_df, dy));
     
-    // The constant C is passed uniformly and stays fixed for all pixels
+    // The C constant is fixed across all pixels to define the specific Dragon variant
     df_float cx = { cConstantSplit.x, cConstantSplit.y };
     df_float cy = { cConstantSplit.z, cConstantSplit.w };
     
@@ -51,15 +50,22 @@ using namespace metal;
         df_float zx2 = df_mul(zx, zx);
         df_float zy2 = df_mul(zy, zy);
         
+        // Escape condition check using high-precision components
         if ((zx2.hi + zy2.hi) >= 4.0f) {
             break;
         }
         
-        df_float two_zx = df_add(zx, zx);
-        zy = df_add(df_mul(two_zx, zy), cy);
+        // Compute standard complex squaring + constant mapping: Z_{n+1} = Z_n^2 + C
+        // Real part: zx^2 - zy^2 + cx
+        df_float real_next = df_add(df_sub(zx2, zy2), cx);
         
-        df_float neg_zy2 = { -zy2.hi, -zy2.lo };
-        zx = df_add(df_add(zx2, neg_zy2), cx);
+        // Imaginary part: 2 * zx * zy + cy
+        df_float two_zx = df_add(zx, zx);
+        df_float imag_next = df_add(df_mul(two_zx, zy), cy);
+        
+        // Update states
+        zx = real_next;
+        zy = imag_next;
     }
     return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
 }
