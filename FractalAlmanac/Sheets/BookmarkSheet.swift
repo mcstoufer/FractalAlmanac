@@ -6,14 +6,189 @@
 //
 
 import SwiftUI
+internal import CoreData
+
+struct BookmarkCell: View {
+    private var bookmarkName: String
+    private var model: String
+    private var palette: String
+    
+    public init(bookmarkName: String, model: String, palette: String) {
+        self.bookmarkName = bookmarkName
+        self.model = model
+        self.palette = palette
+    }
+    
+    var body: some View {
+        HStack(alignment: .center) {
+            Image("placeholder")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 70, height: 70)
+                .padding([.horizontal], 8)
+            Text(bookmarkName)
+                .font(.headline)
+                .padding([.horizontal], 8)
+                .frame(maxWidth: 200, alignment: .leading)
+            Spacer()
+            VStack(alignment: .trailing) {
+                Text(model)
+                    .font(.subheadline)
+                Text(palette)
+                    .font(.subheadline)
+            }
+            .padding([.horizontal], 8)
+        }
+        .frame(height: 70)
+    }
+}
 
 struct BookmarkSheet: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
 
+    @State private var selectedBookmark: Bookmark?
+    
+    @State private var titleKey: String = ""
+    @State private var bookmarkModel: FractalModel
+    @State private var bookmarkPalette: any ColorSchemeProtocol
+    @State private var errorLabel: String = ""
+    @State private var realCenter: Double
+    @State private var imagCenter: Double
+    @State private var zoom: Double
+    @State private var thumbnail: UIImage
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(
+            keyPath: \Bookmark.timestamp,
+            ascending: false
+        )],
+        animation: .default
+    )
+    private var allBookmarks: FetchedResults<Bookmark>
+    
+    public init(
+        bookmarkModel: FractalModel,
+        bookmarkPalette: any ColorSchemeProtocol,
+        realCenter: Double,
+        imagCenter: Double,
+        zoom: Double
+    ) {
+        self.bookmarkModel = bookmarkModel
+        self.bookmarkPalette = bookmarkPalette
+        self.realCenter = realCenter
+        self.imagCenter = imagCenter
+        self.zoom = zoom
+        self.thumbnail = UIImage(imageLiteralResourceName: "placeholder")
+    }
+    
     var body: some View {
-        Button("Dismiss") {
-            dismiss() // Closes the modal
+        VStack(alignment: .leading) {
+            HStack(alignment: .top) {
+                Image(uiImage: thumbnail)
+                    .frame(width: 118, height: 118)
+                    .padding(16)
+                
+                VStack(alignment: .leading) {
+                    TextField("bookmark", text: $titleKey, prompt: Text("Provide a new Bookmark name"))
+                        .onChange(of: titleKey) { oldValue, newValue in
+                            errorLabel = titleKey.count > 0 ? "" : errorLabel
+                        }
+                    Text(errorLabel)
+                        .foregroundStyle(.red)
+                        .fontWeight(.light)
+                        .font(.subheadline)
+                    HStack(alignment: .top) {
+                        Text(bookmarkModel.rawValue)
+                        Spacer()
+                        Text(bookmarkPalette.paletteName)
+                    }
+                    Spacer()
+                    HStack(alignment: .top) {
+                        Text("Real:" + String(format:"%g", realCenter))
+                            .fontWeight(.light)
+                            .font(.subheadline)
+                        Text("Imaginary:" + String(format:"%g", imagCenter))
+                            .fontWeight(.light)
+                            .font(.subheadline)
+                        Text("Zoom:" + String(format:"%g", zoom) + "x")
+                            .fontWeight(.light)
+                            .font(.subheadline)
+                    }
+                }
+                .padding()
+            }
+            .frame(height: 150)
+            
+            List(selection: $selectedBookmark) {
+                ForEach(allBookmarks) { bookmark in
+                    BookmarkCell(
+                        bookmarkName: bookmark.name,
+                        model: bookmark.model,
+                        palette: bookmark.palette
+                    )
+                    .tag(bookmark)
+                }
+            }
+            Spacer()
+            Divider()
+            HStack(alignment: .top) {
+                Button("Dismiss") {
+                    dismiss() // Closes the modal
+                }
+                Spacer()
+                Button("Save") {
+                    save() // Closes the modal
+                }
+            }
+            .padding([.leading, .trailing], 8)
         }
         .padding()
     }
+    
+    private func save() {
+        validateInput(onSuccess: {
+            let bookmark = Bookmark.newBookmark(in: viewContext)
+            bookmark?.name = titleKey
+            bookmark?.centerReal = realCenter
+            bookmark?.centerImag = imagCenter
+            bookmark?.zoomFactor = zoom
+            bookmark?.model = bookmarkModel.rawValue
+            bookmark?.palette = bookmarkPalette.paletteName
+            bookmark?.thumbnail = thumbnail.pngData()!
+            bookmark?.timestamp = Date()
+            
+            do {
+                try bookmark?.managedObjectContext?.save()
+                dismiss()
+            } catch let error as NSError {
+                print("Could not save. \(error), \(error.userInfo)")
+            }
+        }, onFailure: {(errorMsg) in
+             self.errorLabel = errorMsg!
+        })
+    }
+    
+    private func validateInput(onSuccess: () -> (), onFailure: (_ result:String?) -> ()) {
+        if titleKey.count == 0 {
+            onFailure("You must provide a Snapshot name.")
+            return
+        }
+        if let _ = Bookmark.bookmark(forName: titleKey, in: viewContext) {
+            onFailure("A Bookmark already exists with that name.")
+            return
+        }
+        onSuccess()
+    }
+}
+
+
+#Preview {
+    BookmarkSheet(
+        bookmarkModel: .Mandelbrot,
+        bookmarkPalette: Palette.Aesthetic,
+        realCenter: 1.012344,
+        imagCenter: 0.0023456,
+        zoom: 1.2
+    )
 }

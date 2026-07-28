@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24902" systemVersion="25F84" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Bookmark" representedClassName=".Bookmark" syncable="YES">
-        <attribute name="extents" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" customClassName="[Double]"/>
-        <attribute name="model" optional="YES" attributeType="String"/>
+        <attribute name="centerImag" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="centerReal" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="model" attributeType="String"/>
         <attribute name="name" attributeType="String"/>
-        <attribute name="pallete" attributeType="String"/>
-        <attribute name="thumbnail" attributeType="Binary"/>
+        <attribute name="palette" attributeType="String"/>
+        <attribute name="thumbnail" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="zoomFactor" attributeType="Double" defaultValueString="1" usesScalarValueType="YES"/>
     </entity>
     <entity name="ColorScheme" representedClassName="ColorScheme" syncable="YES">
         <attribute name="colors" attributeType="Binary" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" customClassName="[UInt32]"/>

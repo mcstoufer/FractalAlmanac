@@ -13,7 +13,7 @@ enum ActiveSheet: Identifiable {
     case palette
     case bookmark
     case settings
-    case snapshot
+//    case snapshot
     
     // Conformance to Identifiable is required for .sheet(item:)
     var id: String {
@@ -22,19 +22,23 @@ enum ActiveSheet: Identifiable {
             case .palette: return "palette"
             case .bookmark: return "bookmark"
             case .settings: return "settings"
-            case .snapshot: return "snapshot"
+//            case .snapshot: return "snapshot"
         }
     }
 }
 
 struct ViewModelState: Equatable {
+    static func == (lhs: ViewModelState, rhs: ViewModelState) -> Bool {
+        return lhs.activePalette.stableID == rhs.activePalette.stableID
+    }
+    
     var centerReal: Double
     var centerImag: Double
     var isPinching: Bool
     var cyclePalette: Bool
     var baseZoom: Double
     var fractalModel: FractalModel
-    var activePalette: [Float]
+    var activePalette: any ColorSchemeProtocol
     var zoomAnchorReal: Double
     var zoomAnchorImag: Double
     var lastValidTranslation: CGSize
@@ -47,7 +51,7 @@ struct ViewModelState: Equatable {
         cyclePalette: Bool = UserDefaults.standard.lastPaletteCycle,
         baseZoom: Double? = 1.0,
         fractalModel: FractalModel = UserDefaults.standard.lastSelectedModel,
-        activePalette: [Float] = UserDefaults.standard.lastSelectedPalette.paletteShaderColors,
+        activePalette: any ColorSchemeProtocol = UserDefaults.standard.lastSelectedPalette,
         zoomAnchorReal: Double = 0.0,
         zoomAnchorImag: Double = 0.0,
         lastValidTranslation: CGSize = .zero,
@@ -65,11 +69,18 @@ struct ViewModelState: Equatable {
         self.lastValidTranslation = lastValidTranslation
         self.lastValidScale = lastValidScale
     }
+    
+    var paletteShaderColors: [Float] {
+        return activePalette.paletteShaderColors
+    }
 }
 
 struct ContentView: View, PaletteProtocol, ModelProtocol {
+    @Environment(\.displayScale) private var displayScale
+    
     @State private var activeSheet: ActiveSheet?
     @State private var state = ViewModelState()
+    @State private var exportedImage: UIImage?
     
     @GestureState private var gestureTranslation: CGSize = .zero
     @GestureState private var gestureScale: CGFloat = 1.0
@@ -98,7 +109,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
             // Fetch the metal function from ShaderLibrary
             let shader = state.fractalModel.newShader(
                 cyclePalette: state.cyclePalette,
-                activePalette: state.activePalette,
+                activePalette: state.paletteShaderColors,
                 size: canvasSize,
                 dx: dx,
                 dy: dy,
@@ -195,13 +206,13 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
             .tint(.white)
             .padding(.bottom, 5)
             
-            Button(action: {
-                activeSheet = .snapshot
-            }) {
-                Image(systemName: "photo.badge.arrow.down.fill")
-            }
-            .tint(.white)
-            .padding(.bottom, 5)
+//            Button(action: {
+//                activeSheet = .snapshot
+//            }) {
+//                Image(systemName: "photo.badge.arrow.down.fill")
+//            }
+//            .tint(.white)
+//            .padding(.bottom, 5)
             
             Button(action: {
                 activeSheet = .settings
@@ -217,11 +228,15 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
                 case .palette:
                     PalettePicker(paletteDelegate: self)
                 case .bookmark:
-                    BookmarkSheet()
+                    BookmarkSheet(
+                        bookmarkModel: state.fractalModel,
+                        bookmarkPalette: state.activePalette,
+                        realCenter: state.centerReal,
+                        imagCenter: state.centerImag,
+                        zoom: state.baseZoom
+                    )
                 case .settings:
                     SettingsSheet()
-                case .snapshot:
-                    SnapshotSheet()
             }
         }
         .font(.title2)
@@ -235,7 +250,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
     
     // MARK - Palette Protocol
     func paletteSelectionDidChange(p:any ColorSchemeProtocol) {
-        state.activePalette = p.paletteShaderColors
+        state.activePalette = p
     }
     
     func paletteCycleDidChange(b: Bool) {

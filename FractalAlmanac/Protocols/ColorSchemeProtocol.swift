@@ -13,7 +13,7 @@ enum RenderingFilter:Int {
     case Off
 }
 
-protocol ColorSchemeProtocol: Identifiable {
+protocol ColorSchemeProtocol: Identifiable, Equatable {
     var stableID: String { get }
     
     var paletteName: String { get }

@@ -9,15 +9,13 @@ import UIKit
 
 
 class Bookmark: NSManagedObject, SnapshotObject {
-    class func newBookmark() -> Bookmark? {
-        let managedContext = PersistenceController.shared.container.viewContext
+    class func newBookmark(in managedContext: NSManagedObjectContext) -> Bookmark? {
         let entity = NSEntityDescription.entity(forEntityName: "Bookmark", in: managedContext)!
         let bookmark = NSManagedObject(entity: entity, insertInto: managedContext)
         return bookmark as? Bookmark
     }
     
-    class func bookmark(forName name:String) -> Bookmark? {
-        let managedContext = PersistenceController.shared.container.viewContext
+    class func bookmark(forName name:String, in managedContext: NSManagedObjectContext) -> Bookmark? {
         let fetchRequest:NSFetchRequest<Bookmark> = Bookmark.fetchRequest()
         fetchRequest.fetchLimit = 1
         fetchRequest.predicate = NSPredicate(format: "%K=%@", "name", name)
@@ -31,8 +29,7 @@ class Bookmark: NSManagedObject, SnapshotObject {
         return bookmarks.first as? Bookmark
     }
     
-    class func allBookmarks() -> [Bookmark]? {
-        let managedContext = PersistenceController.shared.container.viewContext
+    class func allBookmarks(in managedContext: NSManagedObjectContext) -> [Bookmark]? {
         let fetchRequest:NSFetchRequest<Bookmark> = Bookmark.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
         var bookmarks = [NSManagedObject]()
@@ -44,8 +41,7 @@ class Bookmark: NSManagedObject, SnapshotObject {
         return bookmarks as? [Bookmark]
     }
 
-    class func delete(_ bookmark:Bookmark) -> Bool {
-        let managedContext = PersistenceController.shared.container.viewContext
+    class func delete(_ bookmark:Bookmark, in managedContext: NSManagedObjectContext) -> Bool {
         managedContext.delete(bookmark)
         do {
             try managedContext.save()
@@ -57,18 +53,26 @@ class Bookmark: NSManagedObject, SnapshotObject {
     }
     
     func snapshotName() -> String {
-        return name ?? ""
+        return name
     }
     
     func modelName() -> String {
-        return model ?? ""
+        return model
+    }
+    
+    func center() -> (centerReal: Double, centerImag: Double) {
+        return (centerReal, centerImag)
+    }
+    
+    func zoom() -> Double {
+        return zoomFactor
     }
     
     func colorScheme() -> any ColorSchemeProtocol {
-        if let p = Palette(rawValue: palette!) {
+        if let p = Palette(rawValue: palette) {
             return p
         } else if let c = ColorScheme.colorScheme(
-            forName: palette!,
+            forName: palette,
             on:PersistenceController.shared.container.viewContext
         ) {
             return c
@@ -78,7 +82,7 @@ class Bookmark: NSManagedObject, SnapshotObject {
     }
     
     func image() -> UIImage {
-        return UIImage(data: thumbnail ?? Data()) ?? UIImage()
+        return UIImage(data: thumbnail) ?? UIImage()
     }
 }
 
@@ -88,12 +92,14 @@ extension Bookmark {
         return NSFetchRequest<Bookmark>(entityName: "Bookmark")
     }
 
-    @NSManaged public var name: String?
-    @NSManaged public var extents: [Double]?
-    @NSManaged public var model: String?
-    @NSManaged public var palette: String?
-    @NSManaged public var thumbnail: Data?
-    @NSManaged public var timestamp: Date?
+    @NSManaged public var name: String
+    @NSManaged public var centerReal: Double
+    @NSManaged public var centerImag: Double
+    @NSManaged public var zoomFactor: Double
+    @NSManaged public var model: String
+    @NSManaged public var palette: String
+    @NSManaged public var thumbnail: Data
+    @NSManaged public var timestamp: Date
 
 }
 

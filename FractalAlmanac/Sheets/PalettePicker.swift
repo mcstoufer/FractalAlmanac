@@ -38,7 +38,7 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     @State private var cyclePalette = UserDefaults.standard.lastPaletteCycle
     
     @Environment(\.dismiss) var dismiss
-    @Environment(\.managedObjectContext) private var viewContext
+//    @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(
