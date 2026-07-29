@@ -43,11 +43,17 @@ struct BookmarkCell: View {
     }
 }
 
+enum ActionState: String {
+    case Save
+    case Load
+}
+
 struct BookmarkSheet: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) private var viewContext
 
     @State private var selectedBookmark: Bookmark?
+    @State private var bookmarkDelegate: BookmarkProtocol?
     
     @State private var titleKey: String = ""
     @State private var bookmarkModel: FractalModel
@@ -57,6 +63,8 @@ struct BookmarkSheet: View {
     @State private var imagCenter: Double
     @State private var zoom: Double
     @State private var thumbnail: UIImage
+    
+    @State private var positiveAction: ActionState = .Save
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(
@@ -70,12 +78,14 @@ struct BookmarkSheet: View {
     public init(
         bookmarkModel: FractalModel,
         bookmarkPalette: any ColorSchemeProtocol,
+        bookmarkDelegate: BookmarkProtocol? = nil,
         realCenter: Double,
         imagCenter: Double,
         zoom: Double
     ) {
         self.bookmarkModel = bookmarkModel
         self.bookmarkPalette = bookmarkPalette
+        self.bookmarkDelegate = bookmarkDelegate
         self.realCenter = realCenter
         self.imagCenter = imagCenter
         self.zoom = zoom
@@ -130,6 +140,11 @@ struct BookmarkSheet: View {
                     .tag(bookmark)
                 }
             }
+            .onChange(of: selectedBookmark) { oldBookmark, newBookmark in
+                if let newBookmark {
+                    loadInfoViewWith(newBookmark)
+                }
+            }
             Spacer()
             Divider()
             HStack(alignment: .top) {
@@ -137,13 +152,39 @@ struct BookmarkSheet: View {
                     dismiss() // Closes the modal
                 }
                 Spacer()
-                Button("Save") {
-                    save() // Closes the modal
+                switch positiveAction {
+                    case .Save:
+                        Button(positiveAction.rawValue) {
+                            save() // Saves the modal
+                        }
+                    case .Load:
+                        Button(positiveAction.rawValue) {
+                            restoreBookmark() // Loads the modal
+                        }
                 }
             }
             .padding([.leading, .trailing], 8)
         }
         .padding()
+    }
+    
+    private func restoreBookmark() {
+        if let bookmark = selectedBookmark {
+            bookmarkDelegate?.shouldLoadBookmark(bookmark)
+        }
+        dismiss()
+    }
+    
+    private func loadInfoViewWith(_ bookmark:BookmarkObject) {
+        thumbnail = bookmark.image()
+        titleKey = bookmark.bookmarkName()
+        bookmarkModel = FractalModel(rawValue: bookmark.modelName())!
+        bookmarkPalette = Palette(rawValue: bookmark.colorScheme().paletteName)!
+        realCenter = bookmark.center().centerReal
+        imagCenter = bookmark.center().centerImag
+        zoom = bookmark.zoom()
+        positiveAction = .Load
+        errorLabel = ""
     }
     
     private func save() {

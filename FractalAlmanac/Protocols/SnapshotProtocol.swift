@@ -8,13 +8,15 @@
 import UIKit
 
 
-protocol SnapshotProtocol {
-    func shouldLoadNewSnapshot(_ snapshot:SnapshotObject)
+protocol BookmarkProtocol {
+    func shouldLoadBookmark(_ snapshot:BookmarkObject)
 }
 
-protocol SnapshotObject {
-    func snapshotName() -> String
+protocol BookmarkObject {
+    func bookmarkName() -> String
     func modelName() -> String
     func colorScheme() -> any ColorSchemeProtocol
     func image() -> UIImage
+    func center() -> (centerReal: Double, centerImag: Double)
+    func zoom() -> Double
 }

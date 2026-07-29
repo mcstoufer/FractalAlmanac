@@ -19,26 +19,26 @@ struct ScaledThumbnail {
     }
 }
 
-struct Snapshot {
-    @ScaledThumbnail var thumbnail: UIImage
-    var model: String
-    var palette: any ColorSchemeProtocol
-}
-
-extension Snapshot: SnapshotObject {
-    func snapshotName() -> String {
-        return ""
-    }
-    
-    func modelName() -> String {
-        return model
-    }
-    
-    func colorScheme() -> any ColorSchemeProtocol {
-        return palette
-    }
-    
-    func image() -> UIImage {
-        return thumbnail
-    }
-}
+//struct Snapshot {
+//    @ScaledThumbnail var thumbnail: UIImage
+//    var model: String
+//    var palette: any ColorSchemeProtocol
+//}
+//
+//extension Snapshot: SnapshotObject {
+//    func snapshotName() -> String {
+//        return ""
+//    }
+//    
+//    func modelName() -> String {
+//        return model
+//    }
+//    
+//    func colorScheme() -> any ColorSchemeProtocol {
+//        return palette
+//    }
+//    
+//    func image() -> UIImage {
+//        return thumbnail
+//    }
+//}

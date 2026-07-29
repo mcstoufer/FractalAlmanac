@@ -8,7 +8,7 @@ internal import CoreData
 import UIKit
 
 
-class Bookmark: NSManagedObject, SnapshotObject {
+class Bookmark: NSManagedObject, BookmarkObject {
     class func newBookmark(in managedContext: NSManagedObjectContext) -> Bookmark? {
         let entity = NSEntityDescription.entity(forEntityName: "Bookmark", in: managedContext)!
         let bookmark = NSManagedObject(entity: entity, insertInto: managedContext)
@@ -52,7 +52,7 @@ class Bookmark: NSManagedObject, SnapshotObject {
         }
     }
     
-    func snapshotName() -> String {
+    func bookmarkName() -> String {
         return name
     }
     

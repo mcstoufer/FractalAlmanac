@@ -75,7 +75,7 @@ struct ViewModelState: Equatable {
     }
 }
 
-struct ContentView: View, PaletteProtocol, ModelProtocol {
+struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     @Environment(\.displayScale) private var displayScale
     
     @State private var activeSheet: ActiveSheet?
@@ -231,6 +231,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
                     BookmarkSheet(
                         bookmarkModel: state.fractalModel,
                         bookmarkPalette: state.activePalette,
+                        bookmarkDelegate: self,
                         realCenter: state.centerReal,
                         imagCenter: state.centerImag,
                         zoom: state.baseZoom
@@ -273,6 +274,18 @@ struct ContentView: View, PaletteProtocol, ModelProtocol {
     
     func lastSelectedModel() -> FractalModel? {
         return UserDefaults.standard.lastSelectedModel
+    }
+    
+    // MARK - Bookmark Protocol
+    func shouldLoadBookmark(_ snapshot: any BookmarkObject) {
+        let fractalModel = FractalModel(rawValue: snapshot.modelName())!
+        state.centerReal = snapshot.center().centerReal
+        state.centerImag = snapshot.center().centerImag
+        state.baseZoom = snapshot.zoom()
+        state.activePalette = snapshot.colorScheme()
+        state.fractalModel = fractalModel
+        UserDefaults.standard.lastSelectedModel = fractalModel
+        UserDefaults.standard.lastSelectedPalette = state.activePalette
     }
 }
 
