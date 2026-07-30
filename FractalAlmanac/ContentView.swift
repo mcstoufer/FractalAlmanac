@@ -13,7 +13,7 @@ enum ActiveSheet: Identifiable {
     case palette
     case bookmark
     case settings
-//    case snapshot
+    case snapshot
     
     // Conformance to Identifiable is required for .sheet(item:)
     var id: String {
@@ -22,7 +22,7 @@ enum ActiveSheet: Identifiable {
             case .palette: return "palette"
             case .bookmark: return "bookmark"
             case .settings: return "settings"
-//            case .snapshot: return "snapshot"
+            case .snapshot: return "snapshot"
         }
     }
 }
@@ -38,11 +38,19 @@ struct ViewModelState: Equatable {
     var cyclePalette: Bool
     var baseZoom: Double
     var fractalModel: FractalModel
-    var activePalette: any ColorSchemeProtocol
+    var activePalette: any ColorSchemeProtocol {
+        didSet {
+            if oldValue.stableID != activePalette.stableID {
+                _cachedShaderColors = activePalette.paletteShaderColors
+            }
+        }
+    }
     var zoomAnchorReal: Double
     var zoomAnchorImag: Double
     var lastValidTranslation: CGSize
     var lastValidScale: CGFloat
+    
+    private var _cachedShaderColors: [Float]
     
     init(
         centerReal: Double = 0,
@@ -68,10 +76,11 @@ struct ViewModelState: Equatable {
         self.zoomAnchorImag = zoomAnchorImag
         self.lastValidTranslation = lastValidTranslation
         self.lastValidScale = lastValidScale
+        self._cachedShaderColors = activePalette.paletteShaderColors
     }
     
     var paletteShaderColors: [Float] {
-        return activePalette.paletteShaderColors
+        return _cachedShaderColors
     }
 }
 
@@ -81,6 +90,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     @State private var activeSheet: ActiveSheet?
     @State private var state = ViewModelState()
     @State private var exportedImage: UIImage?
+    @State private var canvasSize: CGSize = .zero
     
     @GestureState private var gestureTranslation: CGSize = .zero
     @GestureState private var gestureScale: CGFloat = 1.0
@@ -88,165 +98,127 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     var body: some View {
         GeometryReader { geometry in
             let canvasSize = geometry.size
+            let extents = extents(for: canvasSize)
             
-            let baseDx = 3.0 / (canvasSize.width * state.baseZoom)
-            let baseDy = 3.0 / (canvasSize.height * state.baseZoom)
-            
-            let activeScale = Double(gestureScale)
-
-            let zoomOffsetX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / activeScale) : 0.0
-            let zoomOffsetY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / activeScale) : 0.0
-            
-            let dragOffsetX = (Double(gestureTranslation.width) * baseDx) / activeScale
-            let dragOffsetY = (Double(gestureTranslation.height) * baseDy) / activeScale
-            
-            let activeCenterReal = state.centerReal - dragOffsetX + zoomOffsetX
-            let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
-            
-            let dx = baseDx / activeScale
-            let dy = baseDy / activeScale
-            
-            // Fetch the metal function from ShaderLibrary
-            let shader = state.fractalModel.newShader(
-                cyclePalette: state.cyclePalette,
-                activePalette: state.paletteShaderColors,
-                size: canvasSize,
-                dx: dx,
-                dy: dy,
-                activeCenterReal: activeCenterReal,
-                activeCenterImag: activeCenterImag
-            )
-            
-            Color.black
-                .colorEffect(shader)
-                .gesture(
-                    // Pan Gesture
-                    DragGesture(minimumDistance: 0)
-                        .simultaneously(with: MagnifyGesture())
-                        .updating($gestureTranslation) { value, state, _ in
-                            state = value.first?.translation ?? .zero
-                        }
-                        .updating($gestureScale) { value, state, _ in
-                            state = value.second?.magnification ?? 1.0
-                        }
-                        .onChanged { value in
-                            // 1. Continuously cache drag translation while active
-                            if let drag = value.first {
-                                state.lastValidTranslation = drag.translation
-                            }
-                            
-                            if let magnify = value.second {
-                                state.lastValidScale = magnify.magnification
-                                
-                                if !state.isPinching {
-                                    let screenX = magnify.startAnchor.x * canvasSize.width
-                                    let screenY = magnify.startAnchor.y * canvasSize.height
-                                    
-                                    // B. Map that screen point directly into its permanent location in Fractal Space
-                                    state.zoomAnchorReal = state.centerReal + Double(screenX - canvasSize.width / 2) * baseDx
-                                    state.zoomAnchorImag = state.centerImag + Double(canvasSize.height / 2 - screenY) * baseDy
-                                    state.isPinching = true
-                                }
-                            }
-                        }
-                        .onEnded { value in
-                            // Calculate final states explicitly matching the exact algebra run above
-                            let finalScale = Double(state.lastValidScale)
-                            
-                            let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / finalScale) : 0.0
-                            let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / finalScale) : 0.0
-                            
-                            let finalDragX = (Double(state.lastValidTranslation.width) * baseDx) / finalScale
-                            let finalDragY = (Double(state.lastValidTranslation.height) * baseDy) / finalScale
-                            
-                            // Mutate camera state precisely once
-                            state.centerReal = state.centerReal - finalDragX + finalZoomX
-                            state.centerImag = state.centerImag - finalDragY - finalZoomY
-                            state.baseZoom = state.baseZoom * finalScale
-                            
-                            // Tear down structural state variables cleanly for the next gesture lifecycle
-                            state.isPinching = false
-                            state.zoomAnchorReal = 0.0
-                            state.zoomAnchorImag = 0.0
-                            state.lastValidTranslation = .zero
-                            state.lastValidScale = 1.0
-                        }
-                )
+            canvasView(canvas: canvasSize, extents: extents)
+                .onAppear {
+                    self.canvasSize = geometry.size
+                }
+                .onChange(of: geometry.size) {_, newSize in
+                    self.canvasSize = newSize
+                }
         }
         .ignoresSafeArea()
         // Attach the custom overlay toolbar
         .overlay(alignment: .bottomTrailing) {
-            floatingToolbar
+            ToolbarOverlay(
+                modelDelegate: self,
+                paletteDelegate: self,
+                bookmarkDelegate: self,
+                state: state,
+                scale: Double(gestureScale),
+                size: canvasSize,
+                renderBlueprint: { size in
+                    canvasView(canvas: size, extents: extents(for: size))
+                }
+            )
         }
     }
     
-    private var floatingToolbar: some View {
-        VStack(alignment: .leading) {
-            Button(action: {
-                activeSheet = .model
-            }) {
-                Image(systemName: "map.fill")
-            }
-            .tint(.white)
-            .padding(.bottom, 5)
-            
-            Button(action: {
-                activeSheet = .palette
-            }) {
-                Image(systemName: "swatchpalette.fill")
-            }
-            .tint(.white)
-            .padding(.bottom, 5)
-            
-            Button(action: {
-                activeSheet = .bookmark
-            }) {
-                Image(systemName: "bookmark.fill")
-            }
-            .tint(.white)
-            .padding(.bottom, 5)
-            
-//            Button(action: {
-//                activeSheet = .snapshot
-//            }) {
-//                Image(systemName: "photo.badge.arrow.down.fill")
-//            }
-//            .tint(.white)
-//            .padding(.bottom, 5)
-            
-            Button(action: {
-                activeSheet = .settings
-            }) {
-                Image(systemName: "gearshape.2.fill")
-            }
-            .tint(.white)
-        }
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-                case .model:
-                    ModelPicker(modelDelegate: self)
-                case .palette:
-                    PalettePicker(paletteDelegate: self)
-                case .bookmark:
-                    BookmarkSheet(
-                        bookmarkModel: state.fractalModel,
-                        bookmarkPalette: state.activePalette,
-                        bookmarkDelegate: self,
-                        realCenter: state.centerReal,
-                        imagCenter: state.centerImag,
-                        zoom: state.baseZoom
-                    )
-                case .settings:
-                    SettingsSheet()
-            }
-        }
-        .font(.title2)
-        .padding(.horizontal, 25)
-        .padding(.vertical, 15)
-        .background(.ultraThinMaterial) // Gives a blur effect overlaying content
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
-        .padding([.bottom, .trailing], 10) // Push it slightly away from the screen edge
+    private func extents(for canvasSize: CGSize) -> (
+        baseDx: Double,
+        baseDy: Double,
+        activeCenterReal: Double,
+        activeCenterImag: Double
+    ) {
+        let baseDx = 3.0 / (canvasSize.width * state.baseZoom)
+        let baseDy = 3.0 / (canvasSize.height * state.baseZoom)
+        
+        let activeScale = Double(gestureScale)
+        
+        let zoomOffsetX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / activeScale) : 0.0
+        let zoomOffsetY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / activeScale) : 0.0
+        
+        let dragOffsetX = (Double(gestureTranslation.width) * baseDx) / activeScale
+        let dragOffsetY = (Double(gestureTranslation.height) * baseDy) / activeScale
+        
+        let activeCenterReal = state.centerReal - dragOffsetX + zoomOffsetX
+        let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
+        
+        return (baseDx, baseDy, activeCenterReal, activeCenterImag)
+    }
+    
+    @ViewBuilder
+    private func canvasView(
+        canvas size: CGSize,
+        extents: (baseDx: Double, baseDy: Double, activeCenterReal: Double, activeCenterImag: Double)
+    ) -> some View {
+        Color.black
+            .frame(width: canvasSize.width, height: canvasSize.height)
+            .colorEffect(
+                state.fractalModel.newShader(
+                    cyclePalette: state.cyclePalette,
+                    activePalette: state.paletteShaderColors,
+                    size: size,
+                    dx: extents.baseDx / Double(gestureScale),
+                    dy: extents.baseDy / Double(gestureScale),
+                    activeCenterReal: extents.activeCenterReal,
+                    activeCenterImag: extents.activeCenterImag
+                )
+            )
+            .gesture(
+                // Pan Gesture
+                DragGesture(minimumDistance: 0)
+                    .simultaneously(with: MagnifyGesture())
+                    .updating($gestureTranslation) { value, state, _ in
+                        state = value.first?.translation ?? .zero
+                    }
+                    .updating($gestureScale) { value, state, _ in
+                        state = value.second?.magnification ?? 1.0
+                    }
+                    .onChanged { value in
+                        // 1. Continuously cache drag translation while active
+                        if let drag = value.first {
+                            state.lastValidTranslation = drag.translation
+                        }
+                        
+                        if let magnify = value.second {
+                            state.lastValidScale = magnify.magnification
+                            
+                            if !state.isPinching {
+                                let screenX = magnify.startAnchor.x * size.width
+                                let screenY = magnify.startAnchor.y * size.height
+                                
+                                // B. Map that screen point directly into its permanent location in Fractal Space
+                                state.zoomAnchorReal = state.centerReal + Double(screenX - size.width / 2) * extents.baseDx
+                                state.zoomAnchorImag = state.centerImag + Double(size.height / 2 - screenY) * extents.baseDy
+                                state.isPinching = true
+                            }
+                        }
+                    }
+                    .onEnded { value in
+                        // Calculate final states explicitly matching the exact algebra run above
+                        let finalScale = Double(state.lastValidScale)
+                        
+                        let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / finalScale) : 0.0
+                        let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / finalScale) : 0.0
+                        
+                        let finalDragX = (Double(state.lastValidTranslation.width) * extents.baseDx) / finalScale
+                        let finalDragY = (Double(state.lastValidTranslation.height) * extents.baseDy) / finalScale
+                        
+                        // Mutate camera state precisely once
+                        state.centerReal = state.centerReal - finalDragX + finalZoomX
+                        state.centerImag = state.centerImag - finalDragY - finalZoomY
+                        state.baseZoom = state.baseZoom * finalScale
+                        
+                        // Tear down structural state variables cleanly for the next gesture lifecycle
+                        state.isPinching = false
+                        state.zoomAnchorReal = 0.0
+                        state.zoomAnchorImag = 0.0
+                        state.lastValidTranslation = .zero
+                        state.lastValidScale = 1.0
+                    }
+            )
     }
     
     // MARK - Palette Protocol

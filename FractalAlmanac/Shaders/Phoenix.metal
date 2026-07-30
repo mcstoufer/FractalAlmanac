@@ -50,12 +50,13 @@ using namespace metal;
     df_float zy_prev = { 0.0f, 0.0f };
     
     uint32_t i = 0;
-    
+    float escapeRadiusSq = 65536.0f;
+
     for (; i < maxIterations; i++) {
         df_float zx2 = df_mul(zx, zx);
         df_float zy2 = df_mul(zy, zy);
         
-        if ((zx2.hi + zy2.hi) >= 4.0f) {
+        if ((zx2.hi + zy2.hi) >= escapeRadiusSq) {
             break;
         }
         
@@ -80,5 +81,7 @@ using namespace metal;
         zx_prev = next_zx_prev;
         zy_prev = next_zy_prev;
         }
-    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
+    
+    float smoothIteration = smoother(i, maxIterations, zx, zy);
+    return color_lookup(colors, smoothIteration, maxIterations, totalColors, colorsCount, cycle);
 }

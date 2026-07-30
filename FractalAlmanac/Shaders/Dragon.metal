@@ -45,13 +45,14 @@ using namespace metal;
     df_float cy = { cConstantSplit.z, cConstantSplit.w };
     
     uint32_t i = 0;
-    
+    float escapeRadiusSq = 65536.0f;
+
     for (; i < maxIterations; i++) {
         df_float zx2 = df_mul(zx, zx);
         df_float zy2 = df_mul(zy, zy);
         
         // Escape condition check using high-precision components
-        if ((zx2.hi + zy2.hi) >= 4.0f) {
+        if ((zx2.hi + zy2.hi) >= escapeRadiusSq) {
             break;
         }
         
@@ -67,5 +68,6 @@ using namespace metal;
         zx = real_next;
         zy = imag_next;
     }
-    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
+    float smoothIteration = smoother(i, maxIterations, zx, zy);
+    return color_lookup(colors, smoothIteration, maxIterations, totalColors, colorsCount, cycle);
 }
