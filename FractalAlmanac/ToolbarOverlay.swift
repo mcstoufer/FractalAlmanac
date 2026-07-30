@@ -7,6 +7,25 @@
 
 import SwiftUI
 
+enum ActiveSheet: Identifiable {
+    case model
+    case palette
+    case bookmark
+    case settings
+    case snapshot
+    
+    // Conformance to Identifiable is required for .sheet(item:)
+    var id: String {
+        switch self {
+            case .model: return "model"
+            case .palette: return "palette"
+            case .bookmark: return "bookmark"
+            case .settings: return "settings"
+            case .snapshot: return "snapshot"
+        }
+    }
+}
+
 enum SnapshotState: String {
     case Save = "photo.badge.arrow.down.fill"
     case Success = "checkmark.circle"
