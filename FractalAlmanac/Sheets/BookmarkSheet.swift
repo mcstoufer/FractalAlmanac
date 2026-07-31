@@ -9,11 +9,13 @@ import SwiftUI
 internal import CoreData
 
 struct BookmarkCell: View {
+    private var thumbnail: UIImage
     private var bookmarkName: String
     private var model: String
     private var palette: String
     
-    public init(bookmarkName: String, model: String, palette: String) {
+    public init(thumbnail: UIImage?, bookmarkName: String, model: String, palette: String) {
+        self.thumbnail = thumbnail ?? UIImage(imageLiteralResourceName: "placeholder")
         self.bookmarkName = bookmarkName
         self.model = model
         self.palette = palette
@@ -21,7 +23,7 @@ struct BookmarkCell: View {
     
     var body: some View {
         HStack(alignment: .center) {
-            Image("placeholder")
+            Image(uiImage: thumbnail)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 70, height: 70)
@@ -48,7 +50,7 @@ enum ActionState: String {
     case Load
 }
 
-struct BookmarkSheet: View {
+struct BookmarkSheet<Canvas:View>: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) private var viewContext
 
@@ -62,8 +64,9 @@ struct BookmarkSheet: View {
     @State private var realCenter: Double
     @State private var imagCenter: Double
     @State private var zoom: Double
+    private var size: CGSize
+    @State private var renderBlueprint: (CGSize) -> Canvas
     @State private var thumbnail: UIImage
-    
     @State private var positiveAction: ActionState = .Save
     
     @FetchRequest(
@@ -81,7 +84,9 @@ struct BookmarkSheet: View {
         bookmarkDelegate: BookmarkProtocol? = nil,
         realCenter: Double,
         imagCenter: Double,
-        zoom: Double
+        zoom: Double,
+        size: CGSize,
+        renderBlueprint: @escaping (CGSize) -> Canvas
     ) {
         self.bookmarkModel = bookmarkModel
         self.bookmarkPalette = bookmarkPalette
@@ -89,6 +94,8 @@ struct BookmarkSheet: View {
         self.realCenter = realCenter
         self.imagCenter = imagCenter
         self.zoom = zoom
+        self.size = size
+        self.renderBlueprint = renderBlueprint
         self.thumbnail = UIImage(imageLiteralResourceName: "placeholder")
     }
     
@@ -96,6 +103,8 @@ struct BookmarkSheet: View {
         VStack(alignment: .leading) {
             HStack(alignment: .top) {
                 Image(uiImage: thumbnail)
+                    .resizable()
+                    .scaledToFit()
                     .frame(width: 118, height: 118)
                     .padding(16)
                 
@@ -133,6 +142,7 @@ struct BookmarkSheet: View {
             List(selection: $selectedBookmark) {
                 ForEach(allBookmarks) { bookmark in
                     BookmarkCell(
+                        thumbnail: UIImage(data: bookmark.thumbnail),
                         bookmarkName: bookmark.name,
                         model: bookmark.model,
                         palette: bookmark.palette
@@ -166,6 +176,10 @@ struct BookmarkSheet: View {
             .padding([.leading, .trailing], 8)
         }
         .padding()
+        .task {
+            thumbnail = renderBlueprint(size)
+                .snapshot() ?? UIImage(imageLiteralResourceName: "placeholder")
+        }
     }
     
     private func restoreBookmark() {
@@ -230,6 +244,10 @@ struct BookmarkSheet: View {
         bookmarkPalette: Palette.Aesthetic,
         realCenter: 1.012344,
         imagCenter: 0.0023456,
-        zoom: 1.2
+        zoom: 1.2,
+        size: CGSize(width: 100, height: 100),
+        renderBlueprint: { size in
+            return EmptyView()
+        }
     )
 }

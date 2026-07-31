@@ -129,7 +129,9 @@ struct ToolbarOverlay<Canvas: View>: View {
                         bookmarkDelegate: bookmarkDelegate,
                         realCenter: state.centerReal,
                         imagCenter: state.centerImag,
-                        zoom: state.baseZoom
+                        zoom: state.baseZoom,
+                        size: size,
+                        renderBlueprint: renderBlueprint
                     )
                 case .snapshot:
                     EmptyView()
@@ -147,13 +149,18 @@ struct ToolbarOverlay<Canvas: View>: View {
     }
     
     @MainActor
+    private func generateBlueprintImage(for size: CGSize) -> UIImage? {
+        return renderBlueprint(size).snapshot()
+    }
+    
+    @MainActor
     private func exportCanvasData() {
         // Reconstruct the layout using the exact snapshot values saved from screen
-        guard let imageToSave = renderBlueprint(size).snapshot() else {
+        guard let imageToSave = generateBlueprintImage(for: size) else {
             print("Failed to rasterize shader view.")
             return
         }
-            
+
         // 2. Initialize the saver class and handle the callback
         let saver = ImageSaver()
         saver.successHandler = {
