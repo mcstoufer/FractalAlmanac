@@ -17,7 +17,7 @@ struct ViewModelState: Equatable {
     var centerReal: Double
     var centerImag: Double
     var isPinching: Bool
-    var cyclePalette: Bool
+    var cyclePalette: PaletteCycleStyle
     var baseZoom: Double
     var fractalModel: FractalModel
     var activePalette: any ColorSchemeProtocol {
@@ -38,7 +38,7 @@ struct ViewModelState: Equatable {
         centerReal: Double = 0,
         centerImag: Double = 0,
         isPinching: Bool = false,
-        cyclePalette: Bool = UserDefaults.standard.lastPaletteCycle,
+        cyclePalette: PaletteCycleStyle = UserDefaults.standard.lastPaletteCycle,
         baseZoom: Double? = 1.0,
         fractalModel: FractalModel = UserDefaults.standard.lastSelectedModel,
         activePalette: any ColorSchemeProtocol = UserDefaults.standard.lastSelectedPalette,

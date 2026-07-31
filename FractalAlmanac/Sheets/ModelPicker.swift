@@ -15,9 +15,11 @@ struct ModelPickerCell: View {
             Image(model.rawValue)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 50, height: 50)
+                .frame(width: 45, height: 45)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding([.leading, .trailing], 10)
             Text(model.rawValue)
+                .font(.body)
             Spacer()
         }
     }
@@ -44,6 +46,7 @@ struct ModelPicker: View {
                     dismiss()
                 }
             }
+            .environment(\.defaultMinListRowHeight, 45)
             Divider()
             Button("Dismiss") {
                 dismiss() // Closes the modal

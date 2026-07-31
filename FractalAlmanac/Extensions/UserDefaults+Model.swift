@@ -53,12 +53,13 @@ extension UserDefaults {
         }
     }
     
-    var lastPaletteCycle: Bool {
+    var lastPaletteCycle: PaletteCycleStyle {
         get {
-            return UserDefaults.standard.bool(forKey: kLastPaletteCycle)
+            let p = UserDefaults.standard.integer(forKey: kLastPaletteCycle)
+            return PaletteCycleStyle(rawValue: p)!
         }
         set(newCycle) {
-            UserDefaults.standard.set(newCycle, forKey: kLastPaletteCycle)
+            UserDefaults.standard.set(newCycle.rawValue, forKey: kLastPaletteCycle)
         }
     }
 }

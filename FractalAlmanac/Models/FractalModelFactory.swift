@@ -41,7 +41,7 @@ extension FractalModel {
         let dySplit = dy.splitDouble
         let cRealSplit = activeCenterReal.splitDouble
         let cImagSplit = activeCenterImag.splitDouble
-        
+                
         let shaderArguments = [
             .float4(cRealSplit.hi, cRealSplit.lo, 0.0, 0.0), // Center Real
             .float4(cImagSplit.hi, cImagSplit.lo, 0.0, 0.0), // Center Imag
@@ -136,7 +136,7 @@ extension FractalModel {
     var iterationCount: Shader.Argument {
         switch self {
             case .Mandelbrot:
-                return .float2(150, 0)
+                return .float2(500, 0)
             case .JuliaA:
                 return .float2(128, 0)
             case .JuliaB:
@@ -144,11 +144,11 @@ extension FractalModel {
             case .JuliaC:
                 return .float2(64, 0)
             case .JuliaD:
-                return .float2(32, 0)
+                return .float2(256, 0)
             case .JuliaG:
                 return .float2(32, 0)
             case .JuliaH:
-                return .float2(24, 0)
+                return .float2(256, 0)
             case .JuliaL:
                 return .float2(64, 0)
             case .JuliaN:

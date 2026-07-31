@@ -101,6 +101,13 @@ inline float2 quick_two_sum(float a, float b) {
     return float2(s, e);
 }
 
+inline uint32_t scaled_iterations(uint32_t baseIterations, float4 scaleSplit, float2 size) {
+    float currentScaleWidth = scaleSplit.x * size.x;
+    float zoomDepth = log10(1.0f / max(currentScaleWidth, 1e-7f));
+    float scalingFactor = 250.0f;
+    return static_cast<uint32_t>(clamp(baseIterations + (scalingFactor * zoomDepth), 100.0f, 10000.0f));
+}
+
 inline float smoother(uint32_t i, uint32_t maxIterations, df_float zx, df_float zy) {
     float smoothIteration = (float)i;
     if (i < maxIterations) {
@@ -123,7 +130,28 @@ inline float smoother(uint32_t i, uint32_t maxIterations, df_float zx, df_float 
     return smoothIteration;
 }
 
-inline half4 color_lookup(device const float *colors,
+
+inline half4 color_lookup(device const float *colors, uint32_t i,
+                          float maxIterations, int totalColors,
+                          int colorsCount, bool cycle) {
+    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
+    
+    int colorIndex = 0;
+    if (cycle == 1) {
+        colorIndex = i % totalColors;
+    } else {
+        colorIndex = (i * totalColors / maxIterations);
+    }
+    
+    int byteOffset = colorIndex * 4;
+    if (byteOffset >= colorsCount - 3) {
+        byteOffset = colorsCount - 4;
+    }
+    
+    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
+}
+
+inline half4 smoothed_color_lookup(device const float *colors,
                           float i,
                           float maxIterations, int totalColors,
                           int colorsCount, bool cycle) {

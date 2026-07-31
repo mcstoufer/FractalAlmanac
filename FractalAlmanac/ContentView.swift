@@ -79,7 +79,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
             .frame(width: canvasSize.width, height: canvasSize.height)
             .colorEffect(
                 state.fractalModel.newShader(
-                    cyclePalette: state.cyclePalette,
+                    cyclePalette: state.cyclePalette != PaletteCycleStyle.Single,
                     activePalette: state.paletteShaderColors,
                     size: size,
                     dx: extents.baseDx / Double(gestureScale),
@@ -149,7 +149,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     }
     
     func paletteCycleDidChange(b: Bool) {
-        state.cyclePalette = b
+        state.cyclePalette = b ? .Repeat : .Single
     }
     
     func lastSelectedPalette() -> (any ColorSchemeProtocol)? {

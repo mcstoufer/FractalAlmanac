@@ -7,6 +7,30 @@
 
 import SwiftUI
 
+enum PaletteCycleStyle: Int, CaseIterable, Identifiable, CustomStringConvertible {
+    var id: Self { self }
+    
+    case Single = 0
+    case Repeat
+    case Smooth
+    
+    var description: String {
+        switch self {
+            case .Single: return "Single pass"
+            case .Repeat: return "Repeat"
+            case .Smooth: return "Smooth"
+        }
+    }
+    
+    var symbol: String {
+        switch self {
+            case .Single: return "arrow.right.to.line"
+            case .Repeat: return "repeat"
+            case .Smooth: return "app.translucent"
+        }
+    }
+}
+
 struct PalettePickerCell: View {
     var palette: UnifiedRowItem
     
@@ -61,13 +85,26 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Toggle("Cycle Palette Colors", isOn: $cyclePalette)
-                .padding([.top, .leading, .trailing], 10)
+            HStack(alignment: .top) {
+                Text("Cycle Palette Colors")
+                    .foregroundStyle(.primary)
+                    .padding(.trailing, 8)
+                Picker("Cycle Palette Colors", selection: $cyclePalette) {
+                    ForEach(PaletteCycleStyle.allCases, id: \.self) { filter in
+                        Label(filter.description, systemImage: filter.symbol).tag(filter)
+                    }
+                }
+                .labelsHidden()
                 .onChange(of: cyclePalette) { oldValue, newValue in
-                    paletteDelegate?.paletteCycleDidChange(b: newValue)
+                    paletteDelegate?.paletteCycleDidChange(b: newValue != PaletteCycleStyle.Single)
                     UserDefaults.standard.lastPaletteCycle = newValue
                     dismiss()
                 }
+                Spacer()
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 18)
+            .padding(.bottom, 5)
             
             List(selection: $selectedPalette) {
                 Section(header: Text(PaletteStyle.Classic.rawValue)

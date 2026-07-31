@@ -22,7 +22,8 @@ using namespace metal;
                              device const float *colors,
                              int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t maxIterations = static_cast<uint32_t>(tuningData.x);
+    uint32_t baseIterations = static_cast<uint32_t>(tuningData.x);
+    uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
     
     float offsetX = position.x - (size.x * 0.5f);
     float offsetY = position.y - (size.y * 0.5f);
@@ -68,6 +69,6 @@ using namespace metal;
         zx = real_next;
         zy = imag_next;
     }
-    float smoothIteration = smoother(i, maxIterations, zx, zy);
-    return color_lookup(colors, smoothIteration, maxIterations, totalColors, colorsCount, cycle);
+//    float smoothIteration = smoother(i, maxIterations, zx, zy);
+    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
 }
