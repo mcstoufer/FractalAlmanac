@@ -8,6 +8,6 @@
 
 protocol PaletteProtocol {
     func paletteSelectionDidChange(p:any ColorSchemeProtocol)
-    func paletteCycleDidChange(b: Bool)
+    func paletteCycleDidChange(b: PaletteCycleStyle)
     func lastSelectedPalette() -> (any ColorSchemeProtocol)?
 }

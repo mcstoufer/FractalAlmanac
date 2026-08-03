@@ -130,39 +130,18 @@ inline float smoother(uint32_t i, uint32_t maxIterations, df_float zx, df_float 
     return smoothIteration;
 }
 
-
-inline half4 color_lookup(device const float *colors, uint32_t i,
-                          float maxIterations, int totalColors,
-                          int colorsCount, bool cycle) {
-    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
-    
-    int colorIndex = 0;
-    if (cycle == 1) {
-        colorIndex = i % totalColors;
-    } else {
-        colorIndex = (i * totalColors / maxIterations);
-    }
-    
-    int byteOffset = colorIndex * 4;
-    if (byteOffset >= colorsCount - 3) {
-        byteOffset = colorsCount - 4;
-    }
-    
-    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
-}
-
 inline half4 smoothed_color_lookup(device const float *colors,
                           float i,
                           float maxIterations, int totalColors,
-                          int colorsCount, bool cycle) {
+                          int colorsCount, float cycle) {
     if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
     
     // 1. Calculate a continuous floating-point index mapped to the total color scale
     float continuousIndex = 0.0;
-    if (cycle) {
-        continuousIndex = fmod(i, (float)totalColors);
-    } else {
+    if (cycle == 2) {
         continuousIndex = (i * (float)totalColors) / maxIterations;
+    } else {
+        continuousIndex = fmod(i, (float)totalColors);
     }
     
     // 2. Identify the two adjacent color indices to interpolate between
@@ -170,7 +149,7 @@ inline half4 smoothed_color_lookup(device const float *colors,
     int index2 = (index1 + 1);
     
     // Handle wrapping for cycling palettes, or clamp to the last index
-    if (cycle) {
+    if (cycle >= 2) {
         index2 = index2 % totalColors;
     } else if (index2 >= totalColors) {
         index2 = totalColors - 1;
@@ -195,18 +174,27 @@ inline half4 smoothed_color_lookup(device const float *colors,
     half3 finalColor = mix(color1, color2, (half)blendFactor);
     
     return half4(finalColor, 1.0);
+}
+
+inline half4 color_lookup(device const float *colors, uint32_t i,
+                          df_float zx, df_float zy,
+                          float maxIterations, int totalColors,
+                          int colorsCount, float cycle) {
+    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
     
-//    int colorIndex = 0;
-//    if (cycle == 1) {
-//        colorIndex = i % totalColors;
-//    } else {
-//        colorIndex = (i * totalColors / maxIterations);
-//    }
-//    
-//    int byteOffset = colorIndex * 4;
-//    if (byteOffset >= colorsCount - 3) {
-//        byteOffset = colorsCount - 4;
-//    }
-//    
-//    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
+    int colorIndex = 0;
+    if (cycle == 0) {
+        colorIndex = (i * totalColors / maxIterations);
+    } else if (cycle == 1) {
+        colorIndex = i % totalColors;
+    } else {
+        float smoothIteration = smoother(i, maxIterations, zx, zy);
+        return smoothed_color_lookup(colors, smoothIteration, maxIterations, totalColors, colorsCount, cycle);
+    }
+    
+    int byteOffset = colorIndex * 4;
+    if (byteOffset >= colorsCount - 3) {
+        byteOffset = colorsCount - 4;
+    }
+    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
 }

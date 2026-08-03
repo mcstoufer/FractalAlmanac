@@ -31,7 +31,7 @@ enum FractalModel: String, CaseIterable, Identifiable {
 
 extension FractalModel {
 
-    func newShader(cyclePalette: Bool,
+    func newShader(cyclePalette: PaletteCycleStyle,
                    activePalette: [Float],
                    size canvasSize: CGSize,
                    dx: Double, dy: Double,
@@ -49,7 +49,7 @@ extension FractalModel {
             self.cConstants,
             .float2(Float(canvasSize.width), Float(canvasSize.height)),
             self.iterationCount,
-            .float(cyclePalette ? 1.0 : 0.0),
+            .float(cyclePalette.shaderValue),
             .floatArray(activePalette)
         ]
         
@@ -120,14 +120,9 @@ extension FractalModel {
             case .PhoenixM:
                 return .float4(0.356338, 0.0, -1.209169, 0.0)
             case .Dragon:
-//                return .float4(1.646009, 0.0, 0.967049, 0.0)
-//                return .float4(-0.8, 0.0, 0.156, 0.0)
                 return .float4(-0.12375, 0.0, 0.74486, 0.0)
             case .SanMarcos:
-                //                dModel.P = 2.998122
-                //                dModel.Q = 0.004298
                 return .float4(2.998122, 0.0, 0.004298, 0)
-//                return .float4(2.998122, 0.0, 0.004298, 0)
             default:
                 return .float4(0.0, 0.0, 0.0, 0.0)
         }
@@ -156,15 +151,15 @@ extension FractalModel {
             case .JuliaO:
                 return .float2(48, 0)
             case .Phoenix:
-                return .float2(128, 0)
+                return .float2(256, 0)
             case .PhoenixJ:
-                return .float2(8, 0)
+                return .float2(256, 0)
             case .PhoenixM:
-                return .float2(64, 0)
+                return .float2(256, 0)
             case .Dragon:
                 return .float2(256, 0)
             case .SanMarcos:
-                return .float2(64, 0)
+                return .float2(128, 0)
         }
     }
 }

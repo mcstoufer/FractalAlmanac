@@ -69,6 +69,5 @@ using namespace metal;
         zx = real_next;
         zy = imag_next;
     }
-//    float smoothIteration = smoother(i, maxIterations, zx, zy);
-    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
+    return color_lookup(colors, i, zx, zy, maxIterations, totalColors, colorsCount, cycle);
 }

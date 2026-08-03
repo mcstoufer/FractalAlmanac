@@ -414,6 +414,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FractalAlmanac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fractal Almanac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save fractal images to your local Photo Library";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -424,7 +425,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 3.0;
 				MTL_FAST_MATH = NO;
 				MTL_MATH_MODE = SAFE;
 				PRODUCT_BUNDLE_IDENTIFIER = org.mcstoufer.FractalAlmanac;
@@ -452,6 +453,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FractalAlmanac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fractal Almanac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save fractal images to your local Photo Library";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -462,7 +464,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 3.0;
 				MTL_FAST_MATH = NO;
 				MTL_MATH_MODE = SAFE;
 				PRODUCT_BUNDLE_IDENTIFIER = org.mcstoufer.FractalAlmanac;

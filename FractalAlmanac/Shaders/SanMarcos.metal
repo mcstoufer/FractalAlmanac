@@ -25,7 +25,7 @@ inline float floatFromSplit(float2 split) {
                               float2 tuningData,
                               float cycle,
                               device const float *colors,
-                              int colorsCount) {
+                                 int colorsCount) {
     // Extract emulated double constants from your split float structures
     float2 P  = cConstantSplit.xy;
     float2 Q  = cConstantSplit.zw;
@@ -89,5 +89,7 @@ inline float floatFromSplit(float2 split) {
     
     // Protect color index constraints before palette evaluation
     colorIndex = clamp(colorIndex, 0, paletteCount - 1);
-    return color_lookup(colors, colorIndex, maxIters, paletteCount, colorsCount, cycle);
+    return color_lookup(colors, colorIndex,
+                        df_float{0.0, 0.0}, df_float{0.0, 0.0},
+                        maxIters, paletteCount, colorsCount, cycle);
 }

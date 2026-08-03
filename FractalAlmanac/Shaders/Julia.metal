@@ -64,7 +64,5 @@ using namespace metal;
         zx = df_add(df_add(zx2, neg_zy2), cx);
     }
     
-//    float smoothIteration = smoother(i, maxIterations, zx, zy);
-//    return smoothed_color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
-    return color_lookup(colors, i, maxIterations, totalColors, colorsCount, cycle);
+    return color_lookup(colors, i, zx, zy, maxIterations, totalColors, colorsCount, cycle);
 }

@@ -13,12 +13,14 @@ enum PaletteCycleStyle: Int, CaseIterable, Identifiable, CustomStringConvertible
     case Single = 0
     case Repeat
     case Smooth
+    case SmoothRepeat
     
     var description: String {
         switch self {
             case .Single: return "Single pass"
             case .Repeat: return "Repeat"
-            case .Smooth: return "Smooth"
+            case .Smooth: return "Smooth single"
+            case .SmoothRepeat: return "Smooth repeat"
         }
     }
     
@@ -26,8 +28,13 @@ enum PaletteCycleStyle: Int, CaseIterable, Identifiable, CustomStringConvertible
         switch self {
             case .Single: return "arrow.right.to.line"
             case .Repeat: return "repeat"
-            case .Smooth: return "app.translucent"
+            case .Smooth: return "app.background.dotted"
+            case .SmoothRepeat: return "app.translucent"
         }
+    }
+    
+    var shaderValue: Float {
+        return Float(self.rawValue)
     }
 }
 
@@ -96,7 +103,7 @@ struct PalettePicker: View, PaletteBuilderProtocol {
                 }
                 .labelsHidden()
                 .onChange(of: cyclePalette) { oldValue, newValue in
-                    paletteDelegate?.paletteCycleDidChange(b: newValue != PaletteCycleStyle.Single)
+                    paletteDelegate?.paletteCycleDidChange(b: newValue)
                     UserDefaults.standard.lastPaletteCycle = newValue
                     dismiss()
                 }
