@@ -99,6 +99,9 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                         state = value.second?.magnification ?? 1.0
                     }
                     .onChanged { value in
+                        #if DEBUG
+//                        triggerGPUCapture()
+                        #endif
                         // 1. Continuously cache drag translation while active
                         if let drag = value.first {
                             state.lastValidTranslation = drag.translation
@@ -108,12 +111,9 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                             state.lastValidScale = magnify.magnification
                             
                             if !state.isPinching {
-                                let screenX = magnify.startAnchor.x * size.width
-                                let screenY = magnify.startAnchor.y * size.height
-                                
                                 // B. Map that screen point directly into its permanent location in Fractal Space
-                                state.zoomAnchorReal = state.centerReal + Double(screenX - size.width / 2) * extents.baseDx
-                                state.zoomAnchorImag = state.centerImag + Double(size.height / 2 - screenY) * extents.baseDy
+                                state.zoomAnchorReal = state.centerReal + (Double(magnify.startAnchor.x) * size.width - size.width / 2.0) * extents.baseDx
+                                state.zoomAnchorImag = state.centerImag + (size.height / 2.0 - Double(magnify.startAnchor.y) * size.height) * extents.baseDy
                                 state.isPinching = true
                             }
                         }
@@ -121,16 +121,14 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                     .onEnded { value in
                         // Calculate final states explicitly matching the exact algebra run above
                         let finalScale = Double(state.lastValidScale)
+                        let scaleRatio = (1.0 - 1.0 / finalScale)
                         
-                        let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / finalScale) : 0.0
-                        let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / finalScale) : 0.0
-                        
-                        let finalDragX = (Double(state.lastValidTranslation.width) * extents.baseDx) / finalScale
-                        let finalDragY = (Double(state.lastValidTranslation.height) * extents.baseDy) / finalScale
+                        let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * scaleRatio : 0.0
+                        let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * scaleRatio : 0.0
                         
                         // Mutate camera state precisely once
-                        state.centerReal = state.centerReal - finalDragX + finalZoomX
-                        state.centerImag = state.centerImag - finalDragY - finalZoomY
+                        state.centerReal = state.centerReal - ((Double(state.lastValidTranslation.width) * extents.baseDx) / finalScale) + finalZoomX
+                        state.centerImag = state.centerImag - ((Double(state.lastValidTranslation.height) * extents.baseDy) / finalScale) - finalZoomY
                         state.baseZoom = state.baseZoom * finalScale
                         
                         // Tear down structural state variables cleanly for the next gesture lifecycle
@@ -139,8 +137,40 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                         state.zoomAnchorImag = 0.0
                         state.lastValidTranslation = .zero
                         state.lastValidScale = 1.0
+                        #if DEBUG
+//                        stopGPUCapture()
+                        #endif
                     }
             )
+    }
+    
+    func triggerGPUCapture() {
+        let captureManager = MTLCaptureManager.shared()
+        guard !captureManager.isCapturing else { return }
+        
+        let captureDescriptor = MTLCaptureDescriptor()
+        // Capture the default system device used by SwiftUI
+        if let defaultDevice = MTLCreateSystemDefaultDevice() {
+            captureDescriptor.captureObject = defaultDevice
+            captureDescriptor.destination = .developerTools
+            
+            do {
+                try captureManager.startCapture(with: captureDescriptor)
+                print("GPU Capture Started via Drag Event")
+            } catch {
+                print("Failed to start programmatic GPU capture: \(error)")
+            }
+        }
+    }
+    
+    func stopGPUCapture() {
+        let captureManager = MTLCaptureManager.shared()
+        
+        // Only stop if a capture is currently running
+        if captureManager.isCapturing {
+            captureManager.stopCapture()
+            print("GPU Capture Stopped — Tracing in Xcode")
+        }
     }
     
     // MARK - Palette Protocol
