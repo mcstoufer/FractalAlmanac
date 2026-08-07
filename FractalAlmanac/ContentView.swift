@@ -14,6 +14,9 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     @State private var state = ViewModelState()
     @State private var canvasSize: CGSize = .zero
     
+    @State private var stableOrbitCenterReal: Double = -0.5
+    @State private var stableOrbitCenterImag: Double = 0.0
+    
     @GestureState private var gestureTranslation: CGSize = .zero
     @GestureState private var gestureScale: CGFloat = 1.0
     
@@ -61,8 +64,11 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         let zoomOffsetX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / activeScale) : 0.0
         let zoomOffsetY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / activeScale) : 0.0
         
-        let dragOffsetX = (Double(gestureTranslation.width) * baseDx) / activeScale
-        let dragOffsetY = (Double(gestureTranslation.height) * baseDy) / activeScale
+        let minDimension = min(Double(canvasSize.width), Double(canvasSize.height))
+        let currentScaleWindow = 3.0 / (state.baseZoom * activeScale)
+        
+        let dragOffsetX = (Double(gestureTranslation.width) / minDimension) * currentScaleWindow
+        let dragOffsetY = (Double(gestureTranslation.height) / minDimension) * currentScaleWindow
         
         let activeCenterReal = state.centerReal - dragOffsetX + zoomOffsetX
         let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
@@ -75,17 +81,28 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         canvas size: CGSize,
         extents: (baseDx: Double, baseDy: Double, activeCenterReal: Double, activeCenterImag: Double)
     ) -> some View {
+        // 1. Calculate the real-time total magnification factor (increases as you zoom in)
+        let activeScale = Double(gestureScale)
+        let totalCurrentZoom = state.baseZoom * activeScale
+        
+        // 2. Turn zoom into a decreasing coordinate scale window (decreases as you zoom in)
+        // 3.0 represents the standard horizontal width box of the Mandelbrot set
+        let decreasingScaleWindow = 3.0 / totalCurrentZoom
+        
         Color.black
             .frame(width: canvasSize.width, height: canvasSize.height)
             .colorEffect(
                 state.fractalModel.newShader(
                     cyclePalette: state.cyclePalette,
                     activePalette: state.paletteShaderColors,
+                    zoom: decreasingScaleWindow,
                     size: size,
-                    dx: extents.baseDx / Double(gestureScale),
-                    dy: extents.baseDy / Double(gestureScale),
+                    dx: extents.baseDx,
+                    dy: extents.baseDy,
                     activeCenterReal: extents.activeCenterReal,
-                    activeCenterImag: extents.activeCenterImag
+                    activeCenterImag: extents.activeCenterImag,
+                    stableCenterReal: state.stableOrbitCenterReal,
+                    stableCenterImag: state.stableOrbitCenterImag
                 )
             )
             .gesture(
@@ -112,8 +129,14 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                             
                             if !state.isPinching {
                                 // B. Map that screen point directly into its permanent location in Fractal Space
-                                state.zoomAnchorReal = state.centerReal + (Double(magnify.startAnchor.x) * size.width - size.width / 2.0) * extents.baseDx
-                                state.zoomAnchorImag = state.centerImag + (size.height / 2.0 - Double(magnify.startAnchor.y) * size.height) * extents.baseDy
+                                let complexSpanX = 3.0 / state.baseZoom
+                                let complexSpanY = 3.0 / state.baseZoom * (Double(size.height) / Double(size.width)) // Maintain aspect ratio parity
+                                
+                                let percentOffsetX = Double(magnify.startAnchor.x) - 0.5
+                                let percentOffsetY = 0.5 - Double(magnify.startAnchor.y) // Invert Y because screen space grows downward
+                                
+                                state.zoomAnchorReal = state.centerReal + (percentOffsetX * complexSpanX)
+                                state.zoomAnchorImag = state.centerImag + (percentOffsetY * complexSpanY)
                                 state.isPinching = true
                             }
                         }
@@ -126,10 +149,19 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                         let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * scaleRatio : 0.0
                         let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * scaleRatio : 0.0
                         
+                        let minDimension = min(Double(size.width), Double(size.height))
+                        let finalScaleWindow = 3.0 / (state.baseZoom * finalScale)
+                        
+                        let finalDragX = (Double(state.lastValidTranslation.width) / minDimension) * finalScaleWindow
+                        let finalDragY = (Double(state.lastValidTranslation.height) / minDimension) * finalScaleWindow
+                        
                         // Mutate camera state precisely once
-                        state.centerReal = state.centerReal - ((Double(state.lastValidTranslation.width) * extents.baseDx) / finalScale) + finalZoomX
-                        state.centerImag = state.centerImag - ((Double(state.lastValidTranslation.height) * extents.baseDy) / finalScale) - finalZoomY
+                        state.centerReal = state.centerReal - finalDragX + finalZoomX
+                        state.centerImag = state.centerImag - finalDragY - finalZoomY
                         state.baseZoom = state.baseZoom * finalScale
+                        
+                        state.stableOrbitCenterReal = state.centerReal
+                        state.stableOrbitCenterImag = state.centerImag
                         
                         // Tear down structural state variables cleanly for the next gesture lifecycle
                         state.isPinching = false

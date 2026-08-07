@@ -29,6 +29,8 @@ struct ViewModelState: Equatable {
     }
     var zoomAnchorReal: Double
     var zoomAnchorImag: Double
+    var stableOrbitCenterReal: Double
+    var stableOrbitCenterImag: Double
     var lastValidTranslation: CGSize
     var lastValidScale: CGFloat
     
@@ -44,6 +46,8 @@ struct ViewModelState: Equatable {
         activePalette: any ColorSchemeProtocol = UserDefaults.standard.lastSelectedPalette,
         zoomAnchorReal: Double = 0.0,
         zoomAnchorImag: Double = 0.0,
+        stableOrbitCenterReal: Double = -0.5,
+        stableOrbitCenterImag: Double = 0.0,
         lastValidTranslation: CGSize = .zero,
         lastValidScale: CGFloat = 1.0
     ) {
@@ -56,6 +60,8 @@ struct ViewModelState: Equatable {
         self.activePalette = activePalette
         self.zoomAnchorReal = zoomAnchorReal
         self.zoomAnchorImag = zoomAnchorImag
+        self.stableOrbitCenterReal = stableOrbitCenterReal
+        self.stableOrbitCenterImag = stableOrbitCenterImag
         self.lastValidTranslation = lastValidTranslation
         self.lastValidScale = lastValidScale
         self._cachedShaderColors = activePalette.paletteShaderColors

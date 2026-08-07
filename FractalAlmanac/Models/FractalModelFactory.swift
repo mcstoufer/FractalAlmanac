@@ -31,31 +31,107 @@ enum FractalModel: String, CaseIterable, Identifiable {
 
 extension FractalModel {
 
-    func newShader(cyclePalette: PaletteCycleStyle,
-                   activePalette: [Float],
-                   size canvasSize: CGSize,
-                   dx: Double, dy: Double,
-                   activeCenterReal: Double,
-                   activeCenterImag: Double) -> Shader {
+    func syntheticShaderArguments(cyclePalette: PaletteCycleStyle,
+                                  activePalette: [Float],
+                                  size canvasSize: CGSize,
+                                  dx: Double, dy: Double,
+                                  activeCenterReal: Double,
+                                  activeCenterImag: Double) -> [Shader.Argument] {
         let dxSplit = dx.splitDouble
         let dySplit = dy.splitDouble
         let cRealSplit = activeCenterReal.splitDouble
         let cImagSplit = activeCenterImag.splitDouble
-                
+        
         let shaderArguments = [
             .float4(cRealSplit.hi, cRealSplit.lo, 0.0, 0.0), // Center Real
             .float4(cImagSplit.hi, cImagSplit.lo, 0.0, 0.0), // Center Imag
             .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
             self.cConstants,
             .float2(Float(canvasSize.width), Float(canvasSize.height)),
-            self.iterationCount,
+            .float(Float(self.iterationCount)),
             .float(cyclePalette.shaderValue),
             .floatArray(activePalette)
         ]
+        return shaderArguments
+    }
+
+    func pertubationShaderArguments(cyclePalette: PaletteCycleStyle,
+                                    activePalette: [Float],
+                                    size canvasSize: CGSize,
+                                    scale: Double,
+                                    activeCenterReal: Double,
+                                    activeCenterImag: Double,
+                                    stableCenterReal: Double,
+                                    stableCenterImag: Double
+    ) -> [Shader.Argument] {
+        var orbit = [SIMD2<Float>]()
+        orbit.reserveCapacity(self.iterationCount)
         
+        var z = SIMD2<Float>(0, 0)
+        let c = SIMD2<Float>(Float(stableCenterReal), Float(stableCenterImag))
+        
+        for _ in 0..<self.iterationCount {
+            // Standard Mandelbrot iteration: z = z^2 + c
+            let nextX = (z.x * z.x) - (z.y * z.y) + c.x
+            let nextY = (2.0 * z.x * z.y) + c.y
+            z = SIMD2<Float>(nextX, nextY)
+            orbit.append(z)
+        }
+        
+        // Convert the contiguous array into raw byte Data for SwiftUI Shader
+        let refBuffer = orbit.withUnsafeBytes { Data($0) }
+
+        let shaderArguments: [Shader.Argument] = [
+            // Position auto injected by Shader init
+            // curentColor auto injected by Shader init
+            .float2(Float(canvasSize.width), Float(canvasSize.height)),  // Size
+            .float(Float(scale)),                                        // Current Scale
+            .float2(Float(activeCenterReal), Float(activeCenterImag)),   // Current center
+            .float2(Float(stableCenterReal), Float(stableCenterImag)),   // Stable Center
+            .float(cyclePalette.shaderValue),                            // Palette Cycle mode
+            .float(Float(self.iterationCount)),                          // Max Iterations
+            .floatArray(activePalette),                                  // Active color palette. colorsCount auto injected by Shader init for prior pointer array
+            .data(refBuffer)                                             // Pertubation Reference Orbit Buffer
+        ]
+        return shaderArguments
+    }
+    
+    func newShader(cyclePalette: PaletteCycleStyle,
+                   activePalette: [Float],
+                   zoom baseZoom: Double,
+                   size canvasSize: CGSize,
+                   dx: Double, dy: Double,
+                   activeCenterReal: Double,
+                   activeCenterImag: Double,
+                   stableCenterReal: Double,
+                   stableCenterImag: Double) -> Shader {
+        
+        var shaderArguments: [Shader.Argument] = []
+        if self == .Mandelbrot {
+            shaderArguments = pertubationShaderArguments(
+                cyclePalette: cyclePalette,
+                activePalette: activePalette,
+                size: canvasSize,
+                scale: baseZoom,
+                activeCenterReal: activeCenterReal,
+                activeCenterImag: activeCenterImag,
+                stableCenterReal: stableCenterReal,
+                stableCenterImag: stableCenterImag
+            )
+        } else {
+            shaderArguments = syntheticShaderArguments(
+                cyclePalette: cyclePalette,
+                activePalette: activePalette,
+                size: canvasSize,
+                dx: dx,
+                dy: dy,
+                activeCenterReal: activeCenterReal,
+                activeCenterImag: activeCenterImag
+            )
+        }
         switch self {
             case .Mandelbrot:
-                return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
+                return Shader(function: ShaderLibrary.mandelbrot_pertubation, arguments: shaderArguments)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return Shader(function: ShaderLibrary.julia, arguments: shaderArguments)
             case .Phoenix, .PhoenixJ, .PhoenixM:
@@ -70,7 +146,7 @@ extension FractalModel {
     var initialCenter: (centerReal: Double, centerImag: Double) {
         switch self {
             case .Mandelbrot:
-                return (-0.7, 0.0)
+                return (-0.5, 0.0)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return (0.0, 0.0)
             case .SanMarcos:
@@ -128,38 +204,38 @@ extension FractalModel {
         }
     }
     
-    var iterationCount: Shader.Argument {
+    var iterationCount: Int {
         switch self {
             case .Mandelbrot:
-                return .float2(500, 0)
+                return 250
             case .JuliaA:
-                return .float2(128, 0)
+                return 128
             case .JuliaB:
-                return .float2(96, 0)
+                return 96
             case .JuliaC:
-                return .float2(64, 0)
+                return 64
             case .JuliaD:
-                return .float2(256, 0)
+                return 256
             case .JuliaG:
-                return .float2(32, 0)
+                return 32
             case .JuliaH:
-                return .float2(256, 0)
+                return 256
             case .JuliaL:
-                return .float2(64, 0)
+                return 64
             case .JuliaN:
-                return .float2(256, 0)
+                return 256
             case .JuliaO:
-                return .float2(48, 0)
+                return 48
             case .Phoenix:
-                return .float2(256, 0)
+                return 256
             case .PhoenixJ:
-                return .float2(256, 0)
+                return 256
             case .PhoenixM:
-                return .float2(256, 0)
+                return 256
             case .Dragon:
-                return .float2(256, 0)
+                return 256
             case .SanMarcos:
-                return .float2(128, 0)
+                return 128
         }
     }
 }

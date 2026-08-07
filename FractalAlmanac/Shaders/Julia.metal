@@ -7,6 +7,7 @@
 
 #include <metal_stdlib>
 #include "ShaderUtilities.metal"
+#include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
@@ -20,7 +21,7 @@ using namespace metal;
                              float2 size,
                              float2 tuningData,
                              float cycle,
-                             device const float *colors,
+                             constant const float *colors,
                              int colorsCount) {
     int totalColors = colorsCount / 4;
     uint32_t baseIterations = static_cast<uint32_t>(tuningData.x);
@@ -64,5 +65,5 @@ using namespace metal;
         zx = df_add(df_add(zx2, neg_zy2), cx);
     }
     
-    return color_lookup(colors, i, zx, zy, maxIterations, totalColors, colorsCount, cycle);
+    return smoothable_color_lookup(colors, i, zx, zy, maxIterations, totalColors, colorsCount, cycle);
 }

@@ -7,6 +7,8 @@
 
 #include <metal_stdlib>
 #include "ShaderUtilities.metal"
+#include "Float2ShaderUtilities.metal"
+#include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
@@ -24,7 +26,7 @@ inline float floatFromSplit(float2 split) {
                               float2 size,
                               float2 tuningData,
                               float cycle,
-                              device const float *colors,
+                              constant const float *colors,
                                  int colorsCount) {
     // Extract emulated double constants from your split float structures
     float2 P  = cConstantSplit.xy;
@@ -89,7 +91,7 @@ inline float floatFromSplit(float2 split) {
     
     // Protect color index constraints before palette evaluation
     colorIndex = clamp(colorIndex, 0, paletteCount - 1);
-    return color_lookup(colors, colorIndex,
+    return smoothable_color_lookup(colors, colorIndex,
                         df_float{0.0, 0.0}, df_float{0.0, 0.0},
                         maxIters, paletteCount, colorsCount, cycle);
 }

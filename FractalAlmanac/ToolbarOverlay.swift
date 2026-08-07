@@ -136,7 +136,8 @@ struct ToolbarOverlay<Canvas: View>: View {
                 case .snapshot:
                     EmptyView()
                 case .settings:
-                    SettingsSheet()
+                    SettingsSheet(state: state)
+                        .presentationDetents([.medium, .height(300)])
             }
         }
         .font(.title2)
