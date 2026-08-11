@@ -7,11 +7,9 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI.h>
-#include "ShaderUtilities.metal"
 #include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
-
 
 [[ stitchable ]] half4 julia(float2 position,
                              SwiftUI::Layer layer,      // FIX: Changed from half4 to SwiftUI::Layer

@@ -63,7 +63,8 @@ extension FractalModel {
                                     size canvasSize: CGSize,
                                     zoom: Double,
                                     refCenterX: Double,
-                                    refCenterY: Double
+                                    refCenterY: Double,
+                                    dx: Double, dy: Double,
     ) -> [Shader.Argument] {
         let uniformScale: Double = (3.0 / Double(canvasSize.width)) / zoom
         let dynamicIterations = Float(iterationCount + Int(log10(max(1.0, zoom)) * 60.0))
@@ -71,13 +72,16 @@ extension FractalModel {
         let uScale = uniformScale.splitSIMD2
         let centerX = refCenterX.splitSIMD2
         let centerY = refCenterY.splitSIMD2
+        let dxSplit = dx.splitDouble
+        let dySplit = dy.splitDouble
         
         let shaderArguments: [Shader.Argument] = [
             // Position auto injected by Shader init
             // SwiftUI::Layer auto injected by Shader init
             .float2(Float(centerX.x), Float(centerX.y)), // refCenterHi
             .float2(Float(centerY.x), Float(centerY.y)), // refCenterLo
-            .float2(Float(uScale.x), Float(uScale.y)),     // deltaScale
+            .float2(Float(uScale.x), Float(uScale.y)),     // Uniform Scale
+            .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
             .float2(Float(canvasSize.width), Float(canvasSize.height)), // Pass exact dimensions
             .float(dynamicIterations),                        // maxIterations
             .float(cyclePalette.shaderValue),
@@ -102,7 +106,9 @@ extension FractalModel {
                 size: canvasSize,
                 zoom: baseZoom,
                 refCenterX: activeCenterReal,
-                refCenterY: activeCenterImag
+                refCenterY: activeCenterImag,
+                dx: dx,
+                dy: dy,
             )
         } else {
             shaderArguments = syntheticShaderArguments(

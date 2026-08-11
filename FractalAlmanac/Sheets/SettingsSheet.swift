@@ -10,7 +10,6 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let state: ViewModelState
-    let scale: CGFloat
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -27,7 +26,7 @@ struct SettingsSheet: View {
             HStack(alignment: .top) {
                 Text("Magnification")
                     .frame(width: 200, alignment: .leading)
-                Text(formatScale(scale))
+                Text(formatScale(state.baseZoom))
             }
             Spacer()
             Divider()
@@ -44,13 +43,15 @@ struct SettingsSheet: View {
     }
     
     private func formatScale(_ rawScale: Double) -> String {
-        let scale = state.scaleWindow(for: rawScale)
-        if scale > 1.0 {
-            return String(format: "%.2f", scale)
-        } else if scale > 0.01 {
-            return String(format: "%.5f", scale)
+        if rawScale <= 1.0 {
+            return String(format: "%.2f", 1.0/rawScale)
         } else {
-            return String(format: "%.5e", scale)
+            let adustedScale = -(1.0/rawScale)
+            if adustedScale > 0.01 {
+                return String(format: "%.5f", adustedScale)
+            } else {
+                return String(format: "%.5e", adustedScale)
+            }
         }
     }
 }

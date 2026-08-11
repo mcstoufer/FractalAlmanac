@@ -82,11 +82,6 @@ struct ViewModelState: Equatable {
     }
     
     func scaleWindow(for gestureScale: CGFloat) -> Double {
-        let activeScale = Double(gestureScale)
-        let totalCurrentZoom = baseZoom * activeScale
-        
-        // 2. Turn zoom into a decreasing coordinate scale window (decreases as you zoom in)
-        // 3.0 represents the standard horizontal width box of the Mandelbrot set
-        return 3.0 / totalCurrentZoom
+        return 1.0/gestureScale
     }
 }

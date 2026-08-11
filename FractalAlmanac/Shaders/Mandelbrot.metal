@@ -11,26 +11,20 @@
 #include "ShaderUtilities.metal"
 using namespace metal;
 
-// Emulated Double addition: Quick-Two-Sum algorithm
-inline float2 ds_add(float2 a, float2 b, thread float2& lo_out) {
-    float2 s = a + b;
-    float2 v = s - a;
-    lo_out = (a - (s - v)) + (b - v);
-    return s;
-}
-
 [[stitchable]] half4 mandelbrot(float2 position,           // Current pixel position (automatically passed by SwiftUI)
                                 SwiftUI::Layer layer,      // FIX: Changed from half4 to SwiftUI::Layer
                                 float2 xCenter,            // FIX: .x = High, .y = Low
                                 float2 yCenter,            // FIX: .x = High, .y = Low
                                 float2 uScale,             // FIX: .x = High, .y = Low (Uniform Scale)
+                                float4 deltaScale,
                                 float2 screenSize,         // FIX: Pass screen size to offset to viewport center
                                 float iterationCount,     // Iteration depth limit
                                 float cyclePalette,
                                 constant const float *colors,
                                 int colorsCount
-                                ) {
-    int maxIterations = int(iterationCount);
+                                 ) {
+    uint32_t maxIterations = uint32_t(iterationCount);
+
     float2 centeredPosition = position - (screenSize * 0.5f);
     
     float2 cx = ds_add(xCenter, ds_mul(uScale, float2(centeredPosition.x, 0.0f)));
@@ -39,7 +33,7 @@ inline float2 ds_add(float2 a, float2 b, thread float2& lo_out) {
     float2 zx = float2(0.0f, 0.0f);
     float2 zy = float2(0.0f, 0.0f);
     
-    int iteration = 0;
+    uint32_t iteration = 0;
     
     // 4. Standard Mandelbrot escape-time loop
     while (iteration < maxIterations) {
@@ -72,6 +66,16 @@ inline float2 ds_add(float2 a, float2 b, thread float2& lo_out) {
     }
     
     int totalColors = colorsCount / 4;
-    return color_lookup(colors, iteration, iterationCount, totalColors, colorsCount, cyclePalette);
+    
+    return smoothable_color_lookup(
+                                   colors,
+                                   iteration,
+                                   zx.x,
+                                   zy.x,
+                                   iterationCount,
+                                   totalColors,
+                                   colorsCount,
+                                   cyclePalette
+                                   );
 
 }

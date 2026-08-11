@@ -34,7 +34,6 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                 paletteDelegate: self,
                 bookmarkDelegate: self,
                 state: state,
-                scale: state.uniformScale(for: canvasSize),
                 size: canvasSize,
                 renderBlueprint: { size in
                     canvasView(canvas: size, extents: extents(for: size))

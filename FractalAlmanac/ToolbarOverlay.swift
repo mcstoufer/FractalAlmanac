@@ -49,7 +49,6 @@ struct ToolbarOverlay<Canvas: View>: View {
     private let paletteDelegate: PaletteProtocol?
     private let bookmarkDelegate: BookmarkProtocol?
     private let state: ViewModelState
-    private let scale: CGFloat
     private let size: CGSize
     private let renderBlueprint: (CGSize) -> Canvas
     
@@ -59,7 +58,6 @@ struct ToolbarOverlay<Canvas: View>: View {
         paletteDelegate: PaletteProtocol?,
         bookmarkDelegate: BookmarkProtocol?,
         state: ViewModelState,
-        scale: CGFloat,
         size: CGSize,
         renderBlueprint: @escaping (CGSize) -> Canvas
     ) {
@@ -68,7 +66,6 @@ struct ToolbarOverlay<Canvas: View>: View {
         self.paletteDelegate = paletteDelegate
         self.bookmarkDelegate = bookmarkDelegate
         self.state = state
-        self.scale = scale
         self.size = size
         self.renderBlueprint = renderBlueprint
     }
@@ -136,10 +133,7 @@ struct ToolbarOverlay<Canvas: View>: View {
                 case .snapshot:
                     EmptyView()
                 case .settings:
-                    SettingsSheet(
-                        state: state,
-                        scale: scale
-                    )
+                    SettingsSheet(state: state)
                         .presentationDetents([.medium, .height(300)])
             }
         }

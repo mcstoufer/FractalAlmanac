@@ -6,7 +6,6 @@
 //
 
 #include <metal_stdlib>
-#include "ShaderUtilities.metal"
 #include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
