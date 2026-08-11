@@ -43,55 +43,45 @@ extension FractalModel {
         let cImagSplit = activeCenterImag.splitDouble
         
         let shaderArguments = [
-            .float4(cRealSplit.hi, cRealSplit.lo, 0.0, 0.0), // Center Real
-            .float4(cImagSplit.hi, cImagSplit.lo, 0.0, 0.0), // Center Imag
+            // Position auto injected by Shader init
+            // currentcolor auto injected by Shader init
+            .float2(cRealSplit.hi, cRealSplit.lo), // Center Real
+            .float2(cImagSplit.hi, cImagSplit.lo), // Center Imag
             .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
             self.cConstants,
             .float2(Float(canvasSize.width), Float(canvasSize.height)),
             .float(Float(self.iterationCount)),
             .float(cyclePalette.shaderValue),
             .floatArray(activePalette)
+            // colorsCount auto injected by Shader init
         ]
         return shaderArguments
     }
-
+    
     func pertubationShaderArguments(cyclePalette: PaletteCycleStyle,
                                     activePalette: [Float],
                                     size canvasSize: CGSize,
-                                    scale: Double,
-                                    activeCenterReal: Double,
-                                    activeCenterImag: Double,
-                                    stableCenterReal: Double,
-                                    stableCenterImag: Double
+                                    zoom: Double,
+                                    refCenterX: Double,
+                                    refCenterY: Double
     ) -> [Shader.Argument] {
-        var orbit = [SIMD2<Float>]()
-        orbit.reserveCapacity(self.iterationCount)
+        let uniformScale: Double = (3.0 / Double(canvasSize.width)) / zoom
+        let dynamicIterations = Float(iterationCount + Int(log10(max(1.0, zoom)) * 60.0))
         
-        var z = SIMD2<Float>(0, 0)
-        let c = SIMD2<Float>(Float(stableCenterReal), Float(stableCenterImag))
+        let uScale = uniformScale.splitSIMD2
+        let centerX = refCenterX.splitSIMD2
+        let centerY = refCenterY.splitSIMD2
         
-        for _ in 0..<self.iterationCount {
-            // Standard Mandelbrot iteration: z = z^2 + c
-            let nextX = (z.x * z.x) - (z.y * z.y) + c.x
-            let nextY = (2.0 * z.x * z.y) + c.y
-            z = SIMD2<Float>(nextX, nextY)
-            orbit.append(z)
-        }
-        
-        // Convert the contiguous array into raw byte Data for SwiftUI Shader
-        let refBuffer = orbit.withUnsafeBytes { Data($0) }
-
         let shaderArguments: [Shader.Argument] = [
             // Position auto injected by Shader init
-            // curentColor auto injected by Shader init
-            .float2(Float(canvasSize.width), Float(canvasSize.height)),  // Size
-            .float(Float(scale)),                                        // Current Scale
-            .float2(Float(activeCenterReal), Float(activeCenterImag)),   // Current center
-            .float2(Float(stableCenterReal), Float(stableCenterImag)),   // Stable Center
-            .float(cyclePalette.shaderValue),                            // Palette Cycle mode
-            .float(Float(self.iterationCount)),                          // Max Iterations
-            .floatArray(activePalette),                                  // Active color palette. colorsCount auto injected by Shader init for prior pointer array
-            .data(refBuffer)                                             // Pertubation Reference Orbit Buffer
+            // SwiftUI::Layer auto injected by Shader init
+            .float2(Float(centerX.x), Float(centerX.y)), // refCenterHi
+            .float2(Float(centerY.x), Float(centerY.y)), // refCenterLo
+            .float2(Float(uScale.x), Float(uScale.y)),     // deltaScale
+            .float2(Float(canvasSize.width), Float(canvasSize.height)), // Pass exact dimensions
+            .float(dynamicIterations),                        // maxIterations
+            .float(cyclePalette.shaderValue),
+            .floatArray(activePalette),
         ]
         return shaderArguments
     }
@@ -102,9 +92,7 @@ extension FractalModel {
                    size canvasSize: CGSize,
                    dx: Double, dy: Double,
                    activeCenterReal: Double,
-                   activeCenterImag: Double,
-                   stableCenterReal: Double,
-                   stableCenterImag: Double) -> Shader {
+                   activeCenterImag: Double) -> Shader {
         
         var shaderArguments: [Shader.Argument] = []
         if self == .Mandelbrot {
@@ -112,11 +100,9 @@ extension FractalModel {
                 cyclePalette: cyclePalette,
                 activePalette: activePalette,
                 size: canvasSize,
-                scale: baseZoom,
-                activeCenterReal: activeCenterReal,
-                activeCenterImag: activeCenterImag,
-                stableCenterReal: stableCenterReal,
-                stableCenterImag: stableCenterImag
+                zoom: baseZoom,
+                refCenterX: activeCenterReal,
+                refCenterY: activeCenterImag
             )
         } else {
             shaderArguments = syntheticShaderArguments(
@@ -129,9 +115,10 @@ extension FractalModel {
                 activeCenterImag: activeCenterImag
             )
         }
+        
         switch self {
             case .Mandelbrot:
-                return Shader(function: ShaderLibrary.mandelbrot_pertubation, arguments: shaderArguments)
+                return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return Shader(function: ShaderLibrary.julia, arguments: shaderArguments)
             case .Phoenix, .PhoenixJ, .PhoenixM:
@@ -146,7 +133,7 @@ extension FractalModel {
     var initialCenter: (centerReal: Double, centerImag: Double) {
         switch self {
             case .Mandelbrot:
-                return (-0.5, 0.0)
+                return (-0.75, 0.0)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return (0.0, 0.0)
             case .SanMarcos:
@@ -174,33 +161,33 @@ extension FractalModel {
     var cConstants: Shader.Argument {
         switch self {
             case .JuliaA:
-                return .float4(0.238498, 0.0, 0.519198, 0.0)
+                return .float2(0.238498, 0.519198)
             case .JuliaB:
-                return .float4(-0.743036, 0.0, 0.113467, 0.0)
+                return .float2(-0.743036, 0.113467)
             case .JuliaC:
-                return .float4(-0.192175, 0.0, 0.656734, 0.0)
+                return .float2(-0.192175, 0.656734)
             case .JuliaD:
-                return .float4(0.108294, 0.0, -0.670487, 0.0)
+                return .float2(0.108294, -0.670487)
             case .JuliaG:
-                return .float4(0.138341, 0.0, 0.649857, 0.0)
+                return .float2(0.138341, 0.649857)
             case .JuliaH:
-                return .float4(0.278560, 0.0, -0.003483, 0.0)
+                return .float2(0.278560, -0.003483)
             case .JuliaL:
-                return .float4(0.268545, 0.0, -0.003483, 0.0)
+                return .float2(0.268545, -0.003483)
             case .JuliaN:
-                return .float4(0.318623, 0.0, -0.044699, 0.0)
+                return .float2(0.318623, -0.044699)
             case .JuliaO:
-                return .float4(0.318623, 0.0, -0.429799, 0.0)
+                return .float2(0.318623, -0.429799)
             case .PhoenixJ, .Phoenix:
-                return .float4(0.56667, 0.0, -0.5, 0.0)
+                return .float2(0.56667, -0.5)
             case .PhoenixM:
-                return .float4(0.356338, 0.0, -1.209169, 0.0)
+                return .float2(0.356338, -1.209169)
             case .Dragon:
-                return .float4(-0.12375, 0.0, 0.74486, 0.0)
+                return .float2(-0.12375, 0.74486)
             case .SanMarcos:
-                return .float4(2.998122, 0.0, 0.004298, 0)
+                return .float2(2.998122, 0.004298)
             default:
-                return .float4(0.0, 0.0, 0.0, 0.0)
+                return .float2(0.0, 0.0)
         }
     }
     

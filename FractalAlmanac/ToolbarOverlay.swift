@@ -136,7 +136,10 @@ struct ToolbarOverlay<Canvas: View>: View {
                 case .snapshot:
                     EmptyView()
                 case .settings:
-                    SettingsSheet(state: state)
+                    SettingsSheet(
+                        state: state,
+                        scale: scale
+                    )
                         .presentationDetents([.medium, .height(300)])
             }
         }

@@ -6,6 +6,7 @@
 //
 
 #include <metal_stdlib>
+#include <SwiftUI/SwiftUI.h>
 #include "ShaderUtilities.metal"
 #include "DualFloatShaderUtilities.metal"
 
@@ -13,18 +14,18 @@ using namespace metal;
 
 
 [[ stitchable ]] half4 julia(float2 position,
-                             half4 currentColor,
-                             float4 centerRealSplit,   // centerReal.hi, centerReal.lo
-                             float4 centerImagSplit,   // centerImag.hi, centerImag.lo
+                             SwiftUI::Layer layer,      // FIX: Changed from half4 to SwiftUI::Layer
+                             float2 centerRealSplit,   // centerReal.hi, centerReal.lo
+                             float2 centerImagSplit,   // centerImag.hi, centerImag.lo
                              float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
-                             float4 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
+                             float2 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
                              float2 size,
-                             float2 tuningData,
+                             float tuningData,
                              float cycle,
                              constant const float *colors,
                              int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t baseIterations = static_cast<uint32_t>(tuningData.x);
+    uint32_t baseIterations = static_cast<uint32_t>(tuningData);
     uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
     
     float offsetX = position.x - (size.x * 0.5f);
@@ -44,8 +45,8 @@ using namespace metal;
     df_float zy = df_add(c_imag_center, df_mul(offset_y_df, dy));
     
     // The constant C is passed uniformly and stays fixed for all pixels
-    df_float cx = { cConstantSplit.x, cConstantSplit.y };
-    df_float cy = { cConstantSplit.z, cConstantSplit.w };
+    df_float cx = { cConstantSplit.x, 0.0 };
+    df_float cy = { cConstantSplit.y, 0.0 };
     
     uint32_t i = 0;
     float escapeRadiusSq = 65536.0f;

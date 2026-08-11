@@ -14,34 +14,27 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     @State private var state = ViewModelState()
     @State private var canvasSize: CGSize = .zero
     
-    @State private var stableOrbitCenterReal: Double = -0.5
-    @State private var stableOrbitCenterImag: Double = 0.0
-    
     @GestureState private var gestureTranslation: CGSize = .zero
     @GestureState private var gestureScale: CGFloat = 1.0
+    
+    @State private var dragAnchorX: Double = -0.7
+    @State private var dragAnchorY: Double = 0.0
+    
+    @State private var zoomAnchor: Double = 1.0
     
     var body: some View {
         GeometryReader { geometry in
             let canvasSize = geometry.size
-            let extents = extents(for: canvasSize)
-            
-            canvasView(canvas: canvasSize, extents: extents)
-                .onAppear {
-                    self.canvasSize = geometry.size
-                }
-                .onChange(of: geometry.size) {_, newSize in
-                    self.canvasSize = newSize
-                }
+            canvasView(canvas: canvasSize, extents: extents(for: canvasSize))
         }
-        .ignoresSafeArea()
-        // Attach the custom overlay toolbar
+        .edgesIgnoringSafeArea(.all)
         .overlay(alignment: .bottomTrailing) {
             ToolbarOverlay(
                 modelDelegate: self,
                 paletteDelegate: self,
                 bookmarkDelegate: self,
                 state: state,
-                scale: Double(gestureScale),
+                scale: state.uniformScale(for: canvasSize),
                 size: canvasSize,
                 renderBlueprint: { size in
                     canvasView(canvas: size, extents: extents(for: size))
@@ -81,97 +74,80 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         canvas size: CGSize,
         extents: (baseDx: Double, baseDy: Double, activeCenterReal: Double, activeCenterImag: Double)
     ) -> some View {
-        // 1. Calculate the real-time total magnification factor (increases as you zoom in)
-        let activeScale = Double(gestureScale)
-        let totalCurrentZoom = state.baseZoom * activeScale
         
-        // 2. Turn zoom into a decreasing coordinate scale window (decreases as you zoom in)
-        // 3.0 represents the standard horizontal width box of the Mandelbrot set
-        let decreasingScaleWindow = 3.0 / totalCurrentZoom
-        
-        Color.black
-            .frame(width: canvasSize.width, height: canvasSize.height)
-            .colorEffect(
+        Color.black // Canvas layer that the shader will redraw over
+            .onAppear {
+                self.canvasSize = size
+            }
+            .onChange(of: size) {_, newSize in
+                self.canvasSize = newSize
+            }
+            .layerEffect(
                 state.fractalModel.newShader(
                     cyclePalette: state.cyclePalette,
-                    activePalette: state.paletteShaderColors,
-                    zoom: decreasingScaleWindow,
-                    size: size,
+                    activePalette: state.activePalette.paletteShaderColors,
+                    zoom: state.baseZoom,
+                    size: canvasSize,
                     dx: extents.baseDx,
                     dy: extents.baseDy,
-                    activeCenterReal: extents.activeCenterReal,
-                    activeCenterImag: extents.activeCenterImag,
-                    stableCenterReal: state.stableOrbitCenterReal,
-                    stableCenterImag: state.stableOrbitCenterImag
-                )
+                    activeCenterReal: state.centerReal,
+                    activeCenterImag: state.centerImag
+                ),
+                maxSampleOffset: .zero
             )
             .gesture(
-                // Pan Gesture
-                DragGesture(minimumDistance: 0)
-                    .simultaneously(with: MagnifyGesture())
+                // Drag to pan the reference center
+                DragGesture()
+                    .onChanged { value in
+                        guard !state.isPinching else { return }
+                        
+                        let uniformScale = state.uniformScale(for: canvasSize)
+                        
+                        let deltaX = Double(value.translation.width) * uniformScale
+                        let deltaY = Double(value.translation.height) * uniformScale
+                        
+                        state.centerReal = dragAnchorX - deltaX
+                        state.centerImag = state.fractalModel == .Mandelbrot
+                        ? dragAnchorY + deltaY
+                        : dragAnchorY - deltaY
+                    }
+                    .onEnded { value in
+                        guard !state.isPinching else { return }
+                        
+                        dragAnchorX = state.centerReal
+                        dragAnchorY = state.centerImag
+                    }
+                    .simultaneously(with: MagnifyGesture()
+                        .onChanged { value in
+                            state.isPinching = true
+                            let currentZoom = zoomAnchor * Double(value.magnification)
+                            
+                            let scaleBefore = (3.0 / Double(canvasSize.width)) / zoomAnchor
+                            let scaleNow = (3.0 / Double(canvasSize.width)) / state.baseZoom
+                            
+                            let pinchOffsetX = Double(value.startLocation.x - canvasSize.width / 2.0)
+                            let pinchOffsetY = Double(value.startLocation.y - canvasSize.height / 2.0)
+                            
+                            state.centerReal = dragAnchorX + pinchOffsetX * (scaleBefore - scaleNow)
+                            state.centerImag = state.fractalModel == .Mandelbrot
+                            ? dragAnchorY - pinchOffsetY * (scaleBefore - scaleNow)
+                            : dragAnchorY + pinchOffsetY * (scaleBefore - scaleNow)
+                            
+                            state.baseZoom = currentZoom
+                        }
+                        .onEnded { _ in
+                            zoomAnchor = state.baseZoom
+                            // Release pan lock and sync dragging coordinates
+                            dragAnchorX = state.centerReal
+                            dragAnchorY = state.centerImag
+                            state.isPinching = false
+                        }
+                    )
                     .updating($gestureTranslation) { value, state, _ in
                         state = value.first?.translation ?? .zero
                     }
                     .updating($gestureScale) { value, state, _ in
                         state = value.second?.magnification ?? 1.0
-                    }
-                    .onChanged { value in
-                        #if DEBUG
-//                        triggerGPUCapture()
-                        #endif
-                        // 1. Continuously cache drag translation while active
-                        if let drag = value.first {
-                            state.lastValidTranslation = drag.translation
-                        }
-                        
-                        if let magnify = value.second {
-                            state.lastValidScale = magnify.magnification
-                            
-                            if !state.isPinching {
-                                // B. Map that screen point directly into its permanent location in Fractal Space
-                                let complexSpanX = 3.0 / state.baseZoom
-                                let complexSpanY = 3.0 / state.baseZoom * (Double(size.height) / Double(size.width)) // Maintain aspect ratio parity
-                                
-                                let percentOffsetX = Double(magnify.startAnchor.x) - 0.5
-                                let percentOffsetY = 0.5 - Double(magnify.startAnchor.y) // Invert Y because screen space grows downward
-                                
-                                state.zoomAnchorReal = state.centerReal + (percentOffsetX * complexSpanX)
-                                state.zoomAnchorImag = state.centerImag + (percentOffsetY * complexSpanY)
-                                state.isPinching = true
-                            }
-                        }
-                    }
-                    .onEnded { value in
-                        // Calculate final states explicitly matching the exact algebra run above
-                        let finalScale = Double(state.lastValidScale)
-                        let scaleRatio = (1.0 - 1.0 / finalScale)
-                        
-                        let finalZoomX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * scaleRatio : 0.0
-                        let finalZoomY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * scaleRatio : 0.0
-                        
-                        let minDimension = min(Double(size.width), Double(size.height))
-                        let finalScaleWindow = 3.0 / (state.baseZoom * finalScale)
-                        
-                        let finalDragX = (Double(state.lastValidTranslation.width) / minDimension) * finalScaleWindow
-                        let finalDragY = (Double(state.lastValidTranslation.height) / minDimension) * finalScaleWindow
-                        
-                        // Mutate camera state precisely once
-                        state.centerReal = state.centerReal - finalDragX + finalZoomX
-                        state.centerImag = state.centerImag - finalDragY - finalZoomY
-                        state.baseZoom = state.baseZoom * finalScale
-                        
-                        state.stableOrbitCenterReal = state.centerReal
-                        state.stableOrbitCenterImag = state.centerImag
-                        
-                        // Tear down structural state variables cleanly for the next gesture lifecycle
-                        state.isPinching = false
-                        state.zoomAnchorReal = 0.0
-                        state.zoomAnchorImag = 0.0
-                        state.lastValidTranslation = .zero
-                        state.lastValidScale = 1.0
-                        #if DEBUG
-//                        stopGPUCapture()
-                        #endif
                     }
             )
     }
@@ -222,10 +198,14 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     func modelSelectionDidChange(f: FractalModel) {
         UserDefaults.standard.lastSelectedModel = f
         let centers = f.initialCenter
+        state.fractalModel = f
         state.centerReal = centers.centerReal
         state.centerImag = centers.centerImag
         state.baseZoom = 1.0
-        state.fractalModel = f
+        zoomAnchor = 1.0
+        dragAnchorX = state.centerReal
+        dragAnchorY = state.centerImag
+
     }
     
     func lastSelectedModel() -> FractalModel? {

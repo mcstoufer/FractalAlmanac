@@ -179,21 +179,21 @@ inline half4 smoothable_color_lookup(constant float *colors, uint32_t i,
     return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
 }
 
-inline half4 color_lookup(constant float *colors, int i,
-                          float maxIterations, int totalColors,
-                          int colorsCount, float cycle) {
-    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
-    
-    int colorIndex = 0;
-    if (cycle == 0) {
-        colorIndex = (i * totalColors / maxIterations);
-    } else if (cycle == 1) {
-        colorIndex = i % totalColors;
-    }
-    
-    int byteOffset = colorIndex * 4;
-    if (byteOffset >= colorsCount - 3) {
-        byteOffset = colorsCount - 4;
-    }
-    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
-}
+//inline half4 color_lookup(constant float *colors, int i,
+//                          float maxIterations, int totalColors,
+//                          int colorsCount, float cycle) {
+//    if (i == maxIterations) return half4(0.0,0.0,0.0,1.0); // black
+//    
+//    int colorIndex = 0;
+//    if (cycle == 0) {
+//        colorIndex = (i * totalColors / maxIterations);
+//    } else if (cycle == 1) {
+//        colorIndex = i % totalColors;
+//    }
+//    
+//    int byteOffset = colorIndex * 4;
+//    if (byteOffset >= colorsCount - 3) {
+//        byteOffset = colorsCount - 4;
+//    }
+//    return half4(colors[byteOffset], colors[byteOffset+1], colors[byteOffset+2], 1.0);
+//}
