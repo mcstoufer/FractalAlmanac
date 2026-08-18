@@ -10,6 +10,9 @@
 
 using namespace metal;
 
+inline df_float df_create(float v) {
+    return {v, 0.0f};
+}
 inline df_float three_sum(float a, float b, float c) {
     // Pass 1: Compute high sum approximation
     float th = a + b;
@@ -61,4 +64,24 @@ inline df_float df_mul(df_float a, df_float b) {
     
     // 4. Combine the tracking variables through the Three-Sum pipeline
     return three_sum(p, cross_term_1, cross_term_2);
+}
+
+inline df_float df_mul2(df_float a, df_float b) {
+    float p = a.hi * b.hi;
+    float e = fma(a.hi, b.hi, -p) + a.hi * b.lo + a.lo * b.hi;
+    return {p + e, e - ((p + e) - p)};
+}
+
+inline df_float df_add2(df_float a, df_float b) {
+    float s = a.hi + b.hi;
+    float v = s - a.hi;
+    float e = (a.hi - (s - v)) + (b.hi - v) + a.lo + b.lo;
+    return {s + e, e - ((s + e) - s)};
+}
+
+inline df_float df_sub2(df_float a, df_float b) {
+    float s = a.hi - b.hi;
+    float v = s - a.hi;
+    float e = (a.hi - (s - v)) - (b.hi + v) + a.lo - b.lo;
+    return {s + e, e - ((s + e) - s)};
 }

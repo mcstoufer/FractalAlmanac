@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C744563430350D69004223D7 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C744563330350D69004223D7 /* Algorithms */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3BAA5C242FF2D7FD00788B6F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C744563430350D69004223D7 /* Algorithms in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = FractalAlmanac;
 			packageProductDependencies = (
+				C744563330350D69004223D7 /* Algorithms */,
 			);
 			productName = FractalAlmanac;
 			productReference = 3BAA5C112FF2D7FC00788B6F /* FractalAlmanac.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 3BAA5C082FF2D7FC00788B6F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C744563230350D69004223D7 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3BAA5C122FF2D7FC00788B6F /* Products */;
 			projectDirPath = "";
@@ -607,6 +616,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C744563230350D69004223D7 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C744563330350D69004223D7 /* Algorithms */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C744563230350D69004223D7 /* XCRemoteSwiftPackageReference "swift-algorithms" */;
+			productName = Algorithms;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3BAA5C092FF2D7FC00788B6F /* Project object */;
 }

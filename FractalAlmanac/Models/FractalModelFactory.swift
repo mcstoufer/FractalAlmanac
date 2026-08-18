@@ -58,38 +58,6 @@ extension FractalModel {
         return shaderArguments
     }
     
-    func pertubationShaderArguments(cyclePalette: PaletteCycleStyle,
-                                    activePalette: [Float],
-                                    size canvasSize: CGSize,
-                                    zoom: Double,
-                                    refCenterX: Double,
-                                    refCenterY: Double,
-                                    dx: Double, dy: Double,
-    ) -> [Shader.Argument] {
-        let uniformScale: Double = (3.0 / Double(canvasSize.width)) / zoom
-        let dynamicIterations = Float(iterationCount + Int(log10(max(1.0, zoom)) * 60.0))
-        
-        let uScale = uniformScale.splitSIMD2
-        let centerX = refCenterX.splitSIMD2
-        let centerY = refCenterY.splitSIMD2
-        let dxSplit = dx.splitDouble
-        let dySplit = dy.splitDouble
-        
-        let shaderArguments: [Shader.Argument] = [
-            // Position auto injected by Shader init
-            // SwiftUI::Layer auto injected by Shader init
-            .float2(Float(centerX.x), Float(centerX.y)), // refCenterHi
-            .float2(Float(centerY.x), Float(centerY.y)), // refCenterLo
-            .float2(Float(uScale.x), Float(uScale.y)),     // Uniform Scale
-            .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
-            .float2(Float(canvasSize.width), Float(canvasSize.height)), // Pass exact dimensions
-            .float(dynamicIterations),                        // maxIterations
-            .float(cyclePalette.shaderValue),
-            .floatArray(activePalette),
-        ]
-        return shaderArguments
-    }
-    
     func newShader(cyclePalette: PaletteCycleStyle,
                    activePalette: [Float],
                    zoom baseZoom: Double,
@@ -97,30 +65,16 @@ extension FractalModel {
                    dx: Double, dy: Double,
                    activeCenterReal: Double,
                    activeCenterImag: Double) -> Shader {
-        
-        var shaderArguments: [Shader.Argument] = []
-        if self == .Mandelbrot {
-            shaderArguments = pertubationShaderArguments(
-                cyclePalette: cyclePalette,
-                activePalette: activePalette,
-                size: canvasSize,
-                zoom: baseZoom,
-                refCenterX: activeCenterReal,
-                refCenterY: activeCenterImag,
-                dx: dx,
-                dy: dy,
+           
+        let shaderArguments = syntheticShaderArguments(
+            cyclePalette: cyclePalette,
+            activePalette: activePalette,
+            size: canvasSize,
+            dx: dx,
+            dy: dy,
+            activeCenterReal: activeCenterReal,
+            activeCenterImag: activeCenterImag
             )
-        } else {
-            shaderArguments = syntheticShaderArguments(
-                cyclePalette: cyclePalette,
-                activePalette: activePalette,
-                size: canvasSize,
-                dx: dx,
-                dy: dy,
-                activeCenterReal: activeCenterReal,
-                activeCenterImag: activeCenterImag
-            )
-        }
         
         switch self {
             case .Mandelbrot:
@@ -139,7 +93,7 @@ extension FractalModel {
     var initialCenter: (centerReal: Double, centerImag: Double) {
         switch self {
             case .Mandelbrot:
-                return (-0.75, 0.0)
+                return (-0.743643887037158704752191506114774, 0.131825904205311970493132056385139)
             case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
                 return (0.0, 0.0)
             case .SanMarcos:

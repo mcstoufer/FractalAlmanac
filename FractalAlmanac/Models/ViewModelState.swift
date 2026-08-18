@@ -16,6 +16,8 @@ struct ViewModelState: Equatable {
     
     var centerReal: Double
     var centerImag: Double
+    var referenceCenterReal: Double
+    var referenceCenterImag: Double
     var isPinching: Bool
     var cyclePalette: PaletteCycleStyle
     var baseZoom: Double
@@ -27,6 +29,7 @@ struct ViewModelState: Equatable {
             }
         }
     }
+    var zoomAnchor: Double
     var zoomAnchorReal: Double
     var zoomAnchorImag: Double
     var stableOrbitCenterReal: Double
@@ -36,14 +39,19 @@ struct ViewModelState: Equatable {
     var panAnchorReal: Double
     var panAnchorImag: Double
     
+    var dragAnchorReal: Double
+    var dragAnchorImag: Double
     private var _cachedShaderColors: [Float]
     
     init(
         centerReal: Double = 0,
         centerImag: Double = 0,
+        referenceCenterReal: Double = 0,
+        referenceCenterImag: Double = 0,
         isPinching: Bool = false,
         cyclePalette: PaletteCycleStyle = UserDefaults.standard.lastPaletteCycle,
         baseZoom: Double = 1.0,
+        zoomAnchor: Double = 1.0,
         fractalModel: FractalModel = UserDefaults.standard.lastSelectedModel,
         activePalette: any ColorSchemeProtocol = UserDefaults.standard.lastSelectedPalette,
         zoomAnchorReal: Double = 0.0,
@@ -53,15 +61,20 @@ struct ViewModelState: Equatable {
         lastValidTranslation: CGSize = .zero,
         lastValidScale: CGFloat = 1.0,
         panAnchorReal: Double = 0.0,
-        panAnchorImag: Double = 0.0
+        panAnchorImag: Double = 0.0,
+        dragAnchorReal: Double = 0.0,
+        dragAnchorImag: Double =  0.0
     ) {
         self.fractalModel = fractalModel
         self.centerReal = self.fractalModel.initialCenter.centerReal
         self.centerImag = self.fractalModel.initialCenter.centerImag
+        self.referenceCenterReal = self.centerReal
+        self.referenceCenterImag = self.centerImag
         self.isPinching = isPinching
         self.cyclePalette = cyclePalette
         self.baseZoom = self.fractalModel.baseZoom
         self.activePalette = activePalette
+        self.zoomAnchor = zoomAnchor
         self.zoomAnchorReal = zoomAnchorReal
         self.zoomAnchorImag = zoomAnchorImag
         self.stableOrbitCenterReal = stableOrbitCenterReal
@@ -71,6 +84,13 @@ struct ViewModelState: Equatable {
         self._cachedShaderColors = activePalette.paletteShaderColors
         self.panAnchorReal = panAnchorReal
         self.panAnchorImag = panAnchorImag
+        self.dragAnchorReal = self.centerReal
+        self.dragAnchorImag = self.centerImag
+    }
+    
+    mutating func resetReferenceCenter() {
+        referenceCenterReal = centerReal
+        referenceCenterImag = centerImag
     }
     
     var paletteShaderColors: [Float] {

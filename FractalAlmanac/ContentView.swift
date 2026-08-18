@@ -7,27 +7,26 @@
 
 import SwiftUI
 import Metal
+import Foundation
 
 struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
-    @Environment(\.displayScale) private var displayScale
-    
     @State private var state = ViewModelState()
+    @State private var engine = MandelbrotEngine()
+    @State private var mState = MandelbrotState()
     @State private var canvasSize: CGSize = .zero
-    
+    @State private var iterationRestoreTimer: Timer?
+
     @GestureState private var gestureTranslation: CGSize = .zero
     @GestureState private var gestureScale: CGFloat = 1.0
     
-    @State private var dragAnchorX: Double = -0.7
-    @State private var dragAnchorY: Double = 0.0
-    
-    @State private var zoomAnchor: Double = 1.0
-    
     var body: some View {
         GeometryReader { geometry in
-            let canvasSize = geometry.size
-            canvasView(canvas: canvasSize, extents: extents(for: canvasSize))
+            resolveCanvasContext(for: geometry.size)
         }
         .edgesIgnoringSafeArea(.all)
+        .onDisappear {
+            iterationRestoreTimer?.invalidate()
+        }
         .overlay(alignment: .bottomTrailing) {
             ToolbarOverlay(
                 modelDelegate: self,
@@ -39,6 +38,47 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                     canvasView(canvas: size, extents: extents(for: size))
                 }
             )
+        }
+    }
+    
+    @ViewBuilder
+    private func resolveCanvasContext(for canvasSize: CGSize) -> some View {
+        switch state.fractalModel {
+            case .Mandelbrot:
+                let currentCenterX = state.centerReal
+                let currentCenterY = state.centerImag
+                let currentIterations = mState.maxIterations
+                let uniformScale = mState.uniformScale(for: canvasSize)
+                
+                ZStack {
+                    MetalMandelbrotView(
+                        engine: engine,
+                        state: mState,
+                        centerX: currentCenterX,
+                        centerY: currentCenterY,
+                        referenceCenterX: state.referenceCenterReal,
+                        referenceCenterY: state.referenceCenterImag,
+                        scale: uniformScale,
+                        maxIterations: currentIterations,
+                        cyclePalette: state.cyclePalette.shaderValue,
+                        paletteShaderColors: state.paletteShaderColors
+                    )
+                    mandelbrotView(canvas: canvasSize, scale: uniformScale)
+                }
+                .overlay(alignment: .bottom) {
+                    VStack(spacing: 4) {
+                        Text(String(format: "X: %.6f, Y: %.6f", state.centerReal, state.centerImag))
+                        Text(String(format: "Zoom: %.2e (Iter: %d)", mState.scale, mState.maxIterations))
+                    }
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(.black.opacity(0.75))
+                    .cornerRadius(8)
+                    .padding()
+                }
+            default:
+                canvasView(canvas: canvasSize, extents: extents(for: canvasSize))
         }
     }
     
@@ -66,6 +106,62 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
         
         return (baseDx, baseDy, activeCenterReal, activeCenterImag)
+    }
+    
+    @ViewBuilder
+    private func mandelbrotView(canvas size: CGSize, scale: Double) -> some View {
+        Color.clear
+        .contentShape(Rectangle()) // FIX: Forces the hit-testing matrix to trap actions
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    guard !state.isPinching else { return }
+                    scheduleFullQualityRenderAfterIdle()
+                    state.centerReal = state.dragAnchorReal - (Double(value.translation.width) * scale)
+                    state.centerImag = state.dragAnchorImag + (Double(value.translation.height) * scale)
+                }
+                .onEnded { value in
+                    guard !state.isPinching else { return }
+                    state.dragAnchorReal = state.centerReal
+                    state.dragAnchorImag = state.centerImag
+                    state.resetReferenceCenter()
+                    scheduleFullQualityRenderAfterIdle()
+                }
+                .simultaneously(with: MagnifyGesture()
+                    .onChanged { value in
+                        self.state.isPinching = true
+                        scheduleFullQualityRenderAfterIdle()
+                        let currentZoom = state.zoomAnchor * Double(value.magnification)
+                        let scaleBefore = (3.0 / Double(size.width)) / state.zoomAnchor
+                        let scaleNow = (3.0 / Double(size.width)) / currentZoom
+                        
+                        let pinchOffsetX = Double(value.startLocation.x - size.width / 2.0)
+                        let pinchOffsetY = Double(value.startLocation.y - size.height / 2.0)
+                        
+                        state.centerReal = state.dragAnchorReal + pinchOffsetX * (scaleBefore - scaleNow)
+                        state.centerImag = state.dragAnchorImag - pinchOffsetY * (scaleBefore - scaleNow)
+                        
+                        mState.scale = currentZoom
+                    }
+                    .onEnded { _ in
+                        state.zoomAnchor = mState.scale
+                        state.dragAnchorReal = state.centerReal
+                        state.dragAnchorImag = state.centerImag
+                        state.resetReferenceCenter()
+                        scheduleFullQualityRenderAfterIdle()
+                        
+                        state.isPinching = false
+                    }
+            )
+        )
+    }
+    
+    private func scheduleFullQualityRenderAfterIdle() {
+        mState.usesInteractionIterationLimit = true
+        iterationRestoreTimer?.invalidate()
+        iterationRestoreTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+            mState.usesInteractionIterationLimit = false
+        }
     }
     
     @ViewBuilder
@@ -105,40 +201,40 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                         let deltaX = Double(value.translation.width) * uniformScale
                         let deltaY = Double(value.translation.height) * uniformScale
                         
-                        state.centerReal = dragAnchorX - deltaX
+                        state.centerReal = state.dragAnchorReal - deltaX
                         state.centerImag = state.fractalModel == .Mandelbrot
-                        ? dragAnchorY + deltaY
-                        : dragAnchorY - deltaY
+                        ? state.dragAnchorImag + deltaY
+                        : state.dragAnchorImag - deltaY
                     }
                     .onEnded { value in
                         guard !state.isPinching else { return }
                         
-                        dragAnchorX = state.centerReal
-                        dragAnchorY = state.centerImag
+                        state.dragAnchorReal = state.centerReal
+                        state.dragAnchorImag = state.centerImag
                     }
                     .simultaneously(with: MagnifyGesture()
                         .onChanged { value in
                             state.isPinching = true
-                            let currentZoom = zoomAnchor * Double(value.magnification)
+                            let currentZoom = state.zoomAnchor * Double(value.magnification)
                             
-                            let scaleBefore = (3.0 / Double(canvasSize.width)) / zoomAnchor
+                            let scaleBefore = (3.0 / Double(canvasSize.width)) / state.zoomAnchor
                             let scaleNow = (3.0 / Double(canvasSize.width)) / state.baseZoom
                             
                             let pinchOffsetX = Double(value.startLocation.x - canvasSize.width / 2.0)
                             let pinchOffsetY = Double(value.startLocation.y - canvasSize.height / 2.0)
                             
-                            state.centerReal = dragAnchorX + pinchOffsetX * (scaleBefore - scaleNow)
+                            state.centerReal = state.dragAnchorReal + pinchOffsetX * (scaleBefore - scaleNow)
                             state.centerImag = state.fractalModel == .Mandelbrot
-                            ? dragAnchorY - pinchOffsetY * (scaleBefore - scaleNow)
-                            : dragAnchorY + pinchOffsetY * (scaleBefore - scaleNow)
+                            ? state.dragAnchorImag - pinchOffsetY * (scaleBefore - scaleNow)
+                            : state.dragAnchorImag + pinchOffsetY * (scaleBefore - scaleNow)
                             
                             state.baseZoom = currentZoom
                         }
                         .onEnded { _ in
-                            zoomAnchor = state.baseZoom
+                            state.zoomAnchor = state.baseZoom
                             // Release pan lock and sync dragging coordinates
-                            dragAnchorX = state.centerReal
-                            dragAnchorY = state.centerImag
+                            state.dragAnchorReal = state.centerReal
+                            state.dragAnchorImag = state.centerImag
                             state.isPinching = false
                         }
                     )
@@ -151,34 +247,34 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
             )
     }
     
-    func triggerGPUCapture() {
-        let captureManager = MTLCaptureManager.shared()
-        guard !captureManager.isCapturing else { return }
-        
-        let captureDescriptor = MTLCaptureDescriptor()
-        // Capture the default system device used by SwiftUI
-        if let defaultDevice = MTLCreateSystemDefaultDevice() {
-            captureDescriptor.captureObject = defaultDevice
-            captureDescriptor.destination = .developerTools
-            
-            do {
-                try captureManager.startCapture(with: captureDescriptor)
-                print("GPU Capture Started via Drag Event")
-            } catch {
-                print("Failed to start programmatic GPU capture: \(error)")
-            }
-        }
-    }
-    
-    func stopGPUCapture() {
-        let captureManager = MTLCaptureManager.shared()
-        
-        // Only stop if a capture is currently running
-        if captureManager.isCapturing {
-            captureManager.stopCapture()
-            print("GPU Capture Stopped — Tracing in Xcode")
-        }
-    }
+//    func triggerGPUCapture() {
+//        let captureManager = MTLCaptureManager.shared()
+//        guard !captureManager.isCapturing else { return }
+//        
+//        let captureDescriptor = MTLCaptureDescriptor()
+//        // Capture the default system device used by SwiftUI
+//        if let defaultDevice = MTLCreateSystemDefaultDevice() {
+//            captureDescriptor.captureObject = defaultDevice
+//            captureDescriptor.destination = .developerTools
+//            
+//            do {
+//                try captureManager.startCapture(with: captureDescriptor)
+//                print("GPU Capture Started via Drag Event")
+//            } catch {
+//                print("Failed to start programmatic GPU capture: \(error)")
+//            }
+//        }
+//    }
+//    
+//    func stopGPUCapture() {
+//        let captureManager = MTLCaptureManager.shared()
+//        
+//        // Only stop if a capture is currently running
+//        if captureManager.isCapturing {
+//            captureManager.stopCapture()
+//            print("GPU Capture Stopped — Tracing in Xcode")
+//        }
+//    }
     
     // MARK - Palette Protocol
     func paletteSelectionDidChange(p:any ColorSchemeProtocol) {
@@ -201,9 +297,9 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         state.centerReal = centers.centerReal
         state.centerImag = centers.centerImag
         state.baseZoom = 1.0
-        zoomAnchor = 1.0
-        dragAnchorX = state.centerReal
-        dragAnchorY = state.centerImag
+        state.zoomAnchor = 1.0
+        state.dragAnchorReal = state.centerReal
+        state.dragAnchorImag = state.centerImag
 
     }
     
@@ -217,6 +313,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         state.centerReal = snapshot.center().centerReal
         state.centerImag = snapshot.center().centerImag
         state.baseZoom = snapshot.zoom()
+        state.zoomAnchor = snapshot.zoom()
         state.activePalette = snapshot.colorScheme()
         state.fractalModel = fractalModel
         UserDefaults.standard.lastSelectedModel = fractalModel
