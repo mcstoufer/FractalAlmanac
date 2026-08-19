@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  FractalAlmanac
 //
-//  Created by Dragon Admin on 6/29/26.
+//  Created by Martin Stoufer on 6/29/26.
 //
 
 import SwiftUI
@@ -22,6 +22,12 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
     var body: some View {
         GeometryReader { geometry in
             resolveCanvasContext(for: geometry.size)
+                .onAppear {
+                    canvasSize = geometry.size
+                }
+                .onChange(of: geometry.size) { _, newSize in
+                    canvasSize = newSize
+                }
         }
         .edgesIgnoringSafeArea(.all)
         .onDisappear {
@@ -35,7 +41,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                 state: state,
                 size: canvasSize,
                 renderBlueprint: { size in
-                    canvasView(canvas: size, extents: extents(for: size))
+                    renderBlueprint(for: size)
                 }
             )
         }
@@ -82,30 +88,27 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
         }
     }
     
-    private func extents(for canvasSize: CGSize) -> (
-        baseDx: Double,
-        baseDy: Double,
-        activeCenterReal: Double,
-        activeCenterImag: Double
-    ) {
-        let baseDx = 3.0 / (canvasSize.width * state.baseZoom)
-        let baseDy = 3.0 / (canvasSize.height * state.baseZoom)
-        
-        let activeScale = Double(gestureScale)
-        
-        let zoomOffsetX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / activeScale) : 0.0
-        let zoomOffsetY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / activeScale) : 0.0
-        
-        let minDimension = min(Double(canvasSize.width), Double(canvasSize.height))
-        let currentScaleWindow = 3.0 / (state.baseZoom * activeScale)
-        
-        let dragOffsetX = (Double(gestureTranslation.width) / minDimension) * currentScaleWindow
-        let dragOffsetY = (Double(gestureTranslation.height) / minDimension) * currentScaleWindow
-        
-        let activeCenterReal = state.centerReal - dragOffsetX + zoomOffsetX
-        let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
-        
-        return (baseDx, baseDy, activeCenterReal, activeCenterImag)
+    @ViewBuilder
+    private func renderBlueprint(for size: CGSize) -> some View {
+        switch state.fractalModel {
+            case .Mandelbrot:
+                let bigSize =  CGSize(width: 2048, height: 2048)
+                MetalMandelbrotView(
+                    engine: engine,
+                    state: mState,
+                    centerX: state.centerReal,
+                    centerY: state.centerImag,
+                    referenceCenterX: state.referenceCenterReal,
+                    referenceCenterY: state.referenceCenterImag,
+                    scale: mState.uniformScale(for: size),
+                    maxIterations: mState.maxIterations,
+                    cyclePalette: state.cyclePalette.shaderValue,
+                    paletteShaderColors: state.paletteShaderColors
+                )
+                .frame(width: bigSize.width, height: bigSize.height)
+            default:
+                canvasView(canvas: size, extents: extents(for: size))
+        }
     }
     
     @ViewBuilder
@@ -154,14 +157,6 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                     }
             )
         )
-    }
-    
-    private func scheduleFullQualityRenderAfterIdle() {
-        mState.usesInteractionIterationLimit = true
-        iterationRestoreTimer?.invalidate()
-        iterationRestoreTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-            mState.usesInteractionIterationLimit = false
-        }
     }
     
     @ViewBuilder
@@ -247,34 +242,39 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
             )
     }
     
-//    func triggerGPUCapture() {
-//        let captureManager = MTLCaptureManager.shared()
-//        guard !captureManager.isCapturing else { return }
-//        
-//        let captureDescriptor = MTLCaptureDescriptor()
-//        // Capture the default system device used by SwiftUI
-//        if let defaultDevice = MTLCreateSystemDefaultDevice() {
-//            captureDescriptor.captureObject = defaultDevice
-//            captureDescriptor.destination = .developerTools
-//            
-//            do {
-//                try captureManager.startCapture(with: captureDescriptor)
-//                print("GPU Capture Started via Drag Event")
-//            } catch {
-//                print("Failed to start programmatic GPU capture: \(error)")
-//            }
-//        }
-//    }
-//    
-//    func stopGPUCapture() {
-//        let captureManager = MTLCaptureManager.shared()
-//        
-//        // Only stop if a capture is currently running
-//        if captureManager.isCapturing {
-//            captureManager.stopCapture()
-//            print("GPU Capture Stopped — Tracing in Xcode")
-//        }
-//    }
+    private func extents(for canvasSize: CGSize) -> (
+        baseDx: Double,
+        baseDy: Double,
+        activeCenterReal: Double,
+        activeCenterImag: Double
+    ) {
+        let baseDx = 3.0 / (canvasSize.width * state.baseZoom)
+        let baseDy = 3.0 / (canvasSize.height * state.baseZoom)
+        
+        let activeScale = Double(gestureScale)
+        
+        let zoomOffsetX = state.isPinching ? (state.zoomAnchorReal - state.centerReal) * (1.0 - 1.0 / activeScale) : 0.0
+        let zoomOffsetY = state.isPinching ? (state.zoomAnchorImag - state.centerImag) * (1.0 - 1.0 / activeScale) : 0.0
+        
+        let minDimension = min(Double(canvasSize.width), Double(canvasSize.height))
+        let currentScaleWindow = 3.0 / (state.baseZoom * activeScale)
+        
+        let dragOffsetX = (Double(gestureTranslation.width) / minDimension) * currentScaleWindow
+        let dragOffsetY = (Double(gestureTranslation.height) / minDimension) * currentScaleWindow
+        
+        let activeCenterReal = state.centerReal - dragOffsetX + zoomOffsetX
+        let activeCenterImag = state.centerImag - dragOffsetY - zoomOffsetY
+        
+        return (baseDx, baseDy, activeCenterReal, activeCenterImag)
+    }
+    
+    private func scheduleFullQualityRenderAfterIdle() {
+        mState.usesInteractionIterationLimit = true
+        iterationRestoreTimer?.invalidate()
+        iterationRestoreTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+            mState.usesInteractionIterationLimit = false
+        }
+    }
     
     // MARK - Palette Protocol
     func paletteSelectionDidChange(p:any ColorSchemeProtocol) {

@@ -159,26 +159,24 @@ struct ToolbarOverlay<Canvas: View>: View {
             return
         }
 
-        // 2. Initialize the saver class and handle the callback
-        let saver = ImageSaver()
-        saver.successHandler = {
-            withAnimation(.default) {
-                snapshotState = .Success
-                animationTrigger += 1
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.default) {
-                    snapshotState = .Save
+        imageToSave.saveImageWithMetadata(
+            caption: "\(state.fractalModel.rawValue): \(state.centerReal), \(state.centerImag)",
+            cameraModel: "FractalAlmanac",
+            lensInfo: "\(self.state.uniformScale(for: size))") { error in
+                if let error {
+                    print("Failed to save to photo album: \(error.localizedDescription)")
+                } else {
+                    withAnimation(.default) {
+                        snapshotState = .Success
+                        animationTrigger += 1
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.default) {
+                            snapshotState = .Save
+                        }
+                    }
                 }
             }
-        }
-        
-        saver.errorHandler = { error in
-            print("Failed to save: \(error.localizedDescription)")
-        }
-        
-        // 3. Commit to photo library
-        saver.writeToPhotoAlbum(image: imageToSave)
     }
 }
