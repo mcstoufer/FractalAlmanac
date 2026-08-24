@@ -104,8 +104,12 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
     
     @State private var candidateColorPalette = Array(0...15).map {index in
         ColorPaletteItem(
-            color: index == 0 ? PaletteColor.red.systemColor : index == 15 ? PaletteColor.black.systemColor : PaletteColor.clear.systemColor,
-            name: index == 0 ? PaletteColor.red.naturalDescription : index == 15 ? PaletteColor.black.naturalDescription : PaletteColor.clear.naturalDescription,
+            color: index == 0 ? PaletteColor.red.systemColor
+            : index == 15
+            ? PaletteColor.black.systemColor : PaletteColor.clear.systemColor,
+            name: index == 0 ? PaletteColor.red.naturalDescription
+            : index == 15 ? PaletteColor.black.naturalDescription
+            : PaletteColor.clear.naturalDescription
         )
     }
     

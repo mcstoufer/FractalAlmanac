@@ -10,14 +10,26 @@ import UIKit
 extension View {
     @MainActor
     func snapshot() -> UIImage? {
+        snapshot(size: nil)
+    }
+    
+    @MainActor
+    func snapshot(size explicitSize: CGSize?) -> UIImage? {
         // Wrap the SwiftUI view inside a UIKit controller
-        let controller = UIHostingController(rootView: self)
+        let controller = UIHostingController(rootView: self.ignoresSafeArea())
         let view = controller.view
         
-        // Set bounds based on the view's layout size
-        let targetSize = controller.view.intrinsicContentSize
+        let targetSize = explicitSize ?? controller.view.intrinsicContentSize
+        guard targetSize.width > 0, targetSize.height > 0 else { return nil }
+        
         view?.bounds = CGRect(origin: .zero, size: targetSize)
+        view?.frame = CGRect(origin: .zero, size: targetSize)
         view?.backgroundColor = .black
+        view?.layoutMargins = .zero
+        view?.directionalLayoutMargins = .zero
+        view?.insetsLayoutMarginsFromSafeArea = false
+        view?.setNeedsLayout()
+        view?.layoutIfNeeded()
         
         // Create the image renderer using the correct device screen scale
         let renderer = UIGraphicsImageRenderer(size: targetSize)

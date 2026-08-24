@@ -36,7 +36,7 @@ class Bookmark: NSManagedObject, BookmarkObject {
         do {
             bookmarks = try managedContext.fetch(fetchRequest)
         } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
+            print("Could not fetch: \(error), \(error.userInfo)")
         }
         return bookmarks as? [Bookmark]
     }
@@ -47,7 +47,7 @@ class Bookmark: NSManagedObject, BookmarkObject {
             try managedContext.save()
             return true
         } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
+            print("Could not delete: \(error), \(error.userInfo)")
             return false
         }
     }
@@ -66,6 +66,10 @@ class Bookmark: NSManagedObject, BookmarkObject {
     
     func zoom() -> Double {
         return zoomFactor
+    }
+    
+    func cycle() -> PaletteCycleStyle {
+        return PaletteCycleStyle(rawValue: Int(paletteCycle))!
     }
     
     func colorScheme() -> any ColorSchemeProtocol {
@@ -98,6 +102,7 @@ extension Bookmark {
     @NSManaged public var zoomFactor: Double
     @NSManaged public var model: String
     @NSManaged public var palette: String
+    @NSManaged public var paletteCycle: Int16
     @NSManaged public var thumbnail: Data
     @NSManaged public var timestamp: Date
 

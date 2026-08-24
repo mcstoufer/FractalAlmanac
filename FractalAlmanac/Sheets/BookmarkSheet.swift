@@ -13,12 +13,20 @@ struct BookmarkCell: View {
     private var bookmarkName: String
     private var model: String
     private var palette: String
+    private var paletteCycle: PaletteCycleStyle
     
-    public init(thumbnail: UIImage?, bookmarkName: String, model: String, palette: String) {
+    public init(
+        thumbnail: UIImage?,
+        bookmarkName: String,
+        model: String,
+        palette: String,
+        paletteCycle: PaletteCycleStyle
+    ) {
         self.thumbnail = thumbnail ?? UIImage(imageLiteralResourceName: "placeholder")
         self.bookmarkName = bookmarkName
         self.model = model
         self.palette = palette
+        self.paletteCycle = paletteCycle
     }
     
     var body: some View {
@@ -37,6 +45,8 @@ struct BookmarkCell: View {
                 Text(model)
                     .font(.subheadline)
                 Text(palette)
+                    .font(.subheadline)
+                Text(paletteCycle.description)
                     .font(.subheadline)
             }
             .padding([.horizontal], 8)
@@ -117,10 +127,12 @@ struct BookmarkSheet<Canvas:View>: View {
                         .foregroundStyle(.red)
                         .fontWeight(.light)
                         .font(.subheadline)
-                    HStack(alignment: .top) {
+                    HStack(alignment: .center) {
                         Text(bookmarkModel.rawValue)
                         Spacer()
                         Text(bookmarkPalette.paletteName)
+                        Text("(\(UserDefaults.standard.lastPaletteCycle.description))")
+                            .font(.caption)
                     }
                     Spacer()
                     HStack(alignment: .top) {
@@ -145,7 +157,8 @@ struct BookmarkSheet<Canvas:View>: View {
                         thumbnail: UIImage(data: bookmark.thumbnail),
                         bookmarkName: bookmark.name,
                         model: bookmark.model,
-                        palette: bookmark.palette
+                        palette: bookmark.palette,
+                        paletteCycle: bookmark.cycle()
                     )
                     .tag(bookmark)
                 }
@@ -177,8 +190,9 @@ struct BookmarkSheet<Canvas:View>: View {
         }
         .padding()
         .task {
-            thumbnail = renderBlueprint(size)
-                .snapshot() ?? UIImage(imageLiteralResourceName: "placeholder")
+            let renderedImage = renderBlueprint(size)
+                .snapshot()
+            self.thumbnail = renderedImage ?? UIImage(imageLiteralResourceName: "placeholder")
         }
     }
     
@@ -210,6 +224,7 @@ struct BookmarkSheet<Canvas:View>: View {
             bookmark?.zoomFactor = zoom
             bookmark?.model = bookmarkModel.rawValue
             bookmark?.palette = bookmarkPalette.paletteName
+            bookmark?.paletteCycle = Int16(UserDefaults.standard.lastPaletteCycle.rawValue)
             bookmark?.thumbnail = thumbnail.pngData()!
             bookmark?.timestamp = Date()
             

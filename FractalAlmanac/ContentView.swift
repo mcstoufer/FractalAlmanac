@@ -108,6 +108,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                 .frame(width: bigSize.width, height: bigSize.height)
             default:
                 canvasView(canvas: size, extents: extents(for: size))
+                    .frame(width: size.width, height: size.height)
         }
     }
     
@@ -177,7 +178,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                     cyclePalette: state.cyclePalette,
                     activePalette: state.activePalette.paletteShaderColors,
                     zoom: state.baseZoom,
-                    size: canvasSize,
+                    size: size,
                     dx: extents.baseDx,
                     dy: extents.baseDy,
                     activeCenterReal: state.centerReal,
