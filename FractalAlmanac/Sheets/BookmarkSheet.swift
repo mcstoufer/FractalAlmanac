@@ -120,6 +120,7 @@ struct BookmarkSheet<Canvas:View>: View {
                 
                 VStack(alignment: .leading) {
                     TextField("bookmark", text: $titleKey, prompt: Text("Provide a new Bookmark name"))
+                        .textInputAutocapitalization(.words)
                         .onChange(of: titleKey) { oldValue, newValue in
                             errorLabel = titleKey.count > 0 ? "" : errorLabel
                         }
@@ -161,6 +162,13 @@ struct BookmarkSheet<Canvas:View>: View {
                         paletteCycle: bookmark.cycle()
                     )
                     .tag(bookmark)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            delete(bookmark)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .onChange(of: selectedBookmark) { oldBookmark, newBookmark in
@@ -201,6 +209,15 @@ struct BookmarkSheet<Canvas:View>: View {
             bookmarkDelegate?.shouldLoadBookmark(bookmark)
         }
         dismiss()
+    }
+    
+    private func delete(_ bookmark: Bookmark) {
+        if selectedBookmark == bookmark {
+            selectedBookmark = nil
+            positiveAction = .Save
+            errorLabel = ""
+        }
+        _ = Bookmark.delete(bookmark, in: viewContext)
     }
     
     private func loadInfoViewWith(_ bookmark:BookmarkObject) {
