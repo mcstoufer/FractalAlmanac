@@ -7,6 +7,7 @@
 
 import SwiftUI
 internal import CoreData
+import OSLog
 
 enum PaletteFilter: Int, CaseIterable, Identifiable, CustomStringConvertible {
     var id: Self { self }
@@ -291,7 +292,7 @@ struct PaletteBuilder: View, ColorPickerSelectionProtocol {
         do {
             try colorScheme?.managedObjectContext?.save()
         } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
+            Logger.compute.error("Could not save. \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
         }
     }
     

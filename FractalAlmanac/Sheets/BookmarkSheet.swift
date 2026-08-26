@@ -7,6 +7,7 @@
 
 import SwiftUI
 internal import CoreData
+import OSLog
 
 struct BookmarkCell: View {
     private var thumbnail: UIImage
@@ -248,7 +249,7 @@ struct BookmarkSheet<Canvas:View>: View {
                 try bookmark?.managedObjectContext?.save()
                 dismiss()
             } catch let error as NSError {
-                print("Could not save. \(error), \(error.userInfo)")
+                Logger.compute.error("Could not save. \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
             }
         }, onFailure: {(errorMsg) in
              self.errorLabel = errorMsg!

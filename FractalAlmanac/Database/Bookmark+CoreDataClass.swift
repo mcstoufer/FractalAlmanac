@@ -5,6 +5,7 @@
 //  Created by Martin Stoufer on 6/29/26.
 //
 internal import CoreData
+import OSLog
 import UIKit
 
 
@@ -24,7 +25,7 @@ class Bookmark: NSManagedObject, BookmarkObject {
         do {
             bookmarks = try managedContext.fetch(fetchRequest)
         } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
+            Logger.compute.error("Could not fetch. \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
         }
         return bookmarks.first as? Bookmark
     }
@@ -36,7 +37,7 @@ class Bookmark: NSManagedObject, BookmarkObject {
         do {
             bookmarks = try managedContext.fetch(fetchRequest)
         } catch let error as NSError {
-            print("Could not fetch: \(error), \(error.userInfo)")
+            Logger.compute.error("Could not fetch: \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
         }
         return bookmarks as? [Bookmark]
     }
@@ -47,7 +48,7 @@ class Bookmark: NSManagedObject, BookmarkObject {
             try managedContext.save()
             return true
         } catch let error as NSError {
-            print("Could not delete: \(error), \(error.userInfo)")
+            Logger.compute.error("Could not delete: \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
             return false
         }
     }

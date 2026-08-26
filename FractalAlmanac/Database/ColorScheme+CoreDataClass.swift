@@ -6,6 +6,7 @@
 //
 import Foundation
 internal import CoreData
+import OSLog
 import SwiftUI
 
 
@@ -28,7 +29,7 @@ class ColorScheme: NSManagedObject {
         do {
             colorSchemes = try managedContext.fetch(fetchRequest)
         } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
+            Logger.compute.error("Could not fetch. \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
         }
         return colorSchemes.first as? ColorScheme
     }
@@ -38,7 +39,7 @@ class ColorScheme: NSManagedObject {
         do {
             colorSchemes = try managedContext.fetch(fetchRequest())
         } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
+            Logger.compute.error("Could not fetch. \(error.localizedDescription, privacy: .public) \(String(describing: error.userInfo), privacy: .public)")
         }
         return colorSchemes as? [ColorScheme]
     }

@@ -32,16 +32,6 @@ extension Color {
         // Combine into a single UInt32 (RGBA format: 0xRRGGBBAA)
         return (r << 24) | (g << 16) | (b << 8) | a
     }
-    
-    func toFloat() -> [Float] {
-        let resolvedColor = self.resolve(in: EnvironmentValues())
-        
-        let redComponent: Float = resolvedColor.red
-        let greenComponent: Float = resolvedColor.green
-        let blueComponent: Float = resolvedColor.blue
-        let opacityComponent: Float = resolvedColor.opacity
-        return [redComponent, greenComponent, blueComponent, opacityComponent]
-    }
 }
 
 extension Color: NumericColorProtocol {

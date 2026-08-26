@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OSLog
 
 enum ActiveSheet: Identifiable {
     case model
@@ -155,7 +156,7 @@ struct ToolbarOverlay<Canvas: View>: View {
     private func exportCanvasData() {
         // Reconstruct the layout using the exact snapshot values saved from screen
         guard let imageToSave = generateBlueprintImage(for: size) else {
-            print("Failed to rasterize shader view.")
+            Logger.compute.info("Failed to rasterize shader view.")
             return
         }
 
@@ -164,7 +165,7 @@ struct ToolbarOverlay<Canvas: View>: View {
             cameraModel: "FractalAlmanac",
             lensInfo: "\(self.state.uniformScale(for: size))") { error in
                 if let error {
-                    print("Failed to save to photo album: \(error.localizedDescription)")
+                    Logger.compute.error("Failed to save to photo album: \(error.localizedDescription, privacy: .public)")
                 } else {
                     withAnimation(.default) {
                         snapshotState = .Success
