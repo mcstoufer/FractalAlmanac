@@ -6,6 +6,7 @@
 //
 
 #include <metal_stdlib>
+#include <SwiftUI/SwiftUI.h>
 #include "DualFloatShaderUtilities.metal"
 #include "Float2ShaderUtilities.metal"
 
@@ -17,21 +18,21 @@ inline float floatFromSplit(float2 split) {
 }
 
 [[ stitchable ]] half4 sanmarcos(float2 position,
-                              half4 currentColor,       // Unused
-                              float4 centerRealSplit,   // centerReal.hi, centerReal.lo
-                              float4 centerImagSplit,   // centerImag.hi, centerImag.lo
+                                 SwiftUI::Layer layer,
+                              float2 centerRealSplit,   // centerReal.hi, centerReal.lo
+                              float2 centerImagSplit,   // centerImag.hi, centerImag.lo
                               float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
-                              float4 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
+                              float2 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
                               float2 size,
-                              float2 tuningData,
+                              float tuningData,
                               float cycle,
                               constant const float *colors,
                                  int colorsCount) {
     // Extract emulated double constants from your split float structures
-    float2 P  = cConstantSplit.xy;
-    float2 Q  = cConstantSplit.zw;
+    float2 P  = { cConstantSplit.x, 0.0f };
+    float2 Q  = { cConstantSplit.y, 0.0f };
     
-    int maxIters = int(tuningData.x);
+    int maxIters = int(tuningData);
     
     // Core Image coordinate setup: calculate pixel offset from the viewport center
     float2 pixelOffset = position - size * 0.5f;

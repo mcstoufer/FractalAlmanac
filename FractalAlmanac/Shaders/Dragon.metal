@@ -6,23 +6,24 @@
 //
 
 #include <metal_stdlib>
+#include <SwiftUI/SwiftUI.h>
 #include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
 [[ stitchable ]] half4 dragon(float2 position,
-                             half4 currentColor,
-                             float4 centerRealSplit,   // centerReal.hi, centerReal.lo
-                             float4 centerImagSplit,   // centerImag.hi, centerImag.lo
-                             float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
-                             float4 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
-                             float2 size,
-                             float2 tuningData,
-                             float cycle,
-                             constant const float *colors,
-                             int colorsCount) {
+                              SwiftUI::Layer layer,
+                              float2 centerRealSplit,   // centerReal.hi, centerReal.lo
+                              float2 centerImagSplit,   // centerImag.hi, centerImag.lo
+                              float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
+                              float2 cConstantSplit,    // cConstantReal.hi, cConstantReal.lo, cConstantImag.hi, cConstantImag.lo
+                              float2 size,
+                              float tuningData,
+                              float cycle,
+                              constant const float *colors,
+                              int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t baseIterations = static_cast<uint32_t>(tuningData.x);
+    uint32_t baseIterations = static_cast<uint32_t>(tuningData);
     uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
     
     float offsetX = position.x - (size.x * 0.5f);
@@ -42,8 +43,8 @@ using namespace metal;
     df_float zy = df_add(c_imag_center, df_mul(offset_y_df, dy));
     
     // The C constant is fixed across all pixels to define the specific Dragon variant
-    df_float cx = { cConstantSplit.x, cConstantSplit.y };
-    df_float cy = { cConstantSplit.z, cConstantSplit.w };
+    df_float cx = { cConstantSplit.x, 0.0f };
+    df_float cy = { cConstantSplit.y, 0.0f };
     
     uint32_t i = 0;
     float escapeRadiusSq = 65536.0f;

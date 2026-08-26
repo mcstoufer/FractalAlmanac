@@ -2,7 +2,7 @@
 //  ColorPicker.swift
 //  FractalAlmanac
 //
-//  Created by Dragon Admin on 7/2/26.
+//  Created by Martin Stoufer on 7/2/26.
 //
 import SwiftUI
 

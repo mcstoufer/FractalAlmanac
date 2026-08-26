@@ -120,7 +120,6 @@ struct BookmarkSheet<Canvas:View>: View {
                 
                 VStack(alignment: .leading) {
                     TextField("bookmark", text: $titleKey, prompt: Text("Provide a new Bookmark name"))
-                        .textInputAutocapitalization(.words)
                         .onChange(of: titleKey) { oldValue, newValue in
                             errorLabel = titleKey.count > 0 ? "" : errorLabel
                         }

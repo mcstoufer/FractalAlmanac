@@ -2,7 +2,7 @@
 //  PaletteProtocol.swift
 //  FractalAlmanac
 //
-//  Created by Dragon Admin on 7/1/26.
+//  Created by Martin Stoufer on 7/1/26.
 //
 
 

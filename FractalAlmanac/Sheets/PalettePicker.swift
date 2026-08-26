@@ -2,7 +2,7 @@
 //  PalettePicker.swift
 //  FractalAlmanac
 //
-//  Created by Dragon Admin on 7/1/26.
+//  Created by Martin Stoufer on 7/1/26.
 //
 
 import SwiftUI
@@ -35,6 +35,13 @@ enum PaletteCycleStyle: Int, CaseIterable, Identifiable, CustomStringConvertible
     
     var shaderValue: Float {
         return Float(self.rawValue)
+    }
+    
+    static func allCases(for model: FractalModel) -> [PaletteCycleStyle] {
+        let allCases = PaletteCycleStyle.allCases
+        let removalSet = Set<PaletteCycleStyle>([.Smooth, .SmoothRepeat])
+        
+        return model == .SanMarcos ? allCases.filter { !removalSet.contains($0) } : allCases
     }
 }
 
@@ -69,7 +76,6 @@ struct PalettePicker: View, PaletteBuilderProtocol {
     @State private var cyclePalette = UserDefaults.standard.lastPaletteCycle
     
     @Environment(\.dismiss) var dismiss
-//    @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(
@@ -79,6 +85,8 @@ struct PalettePicker: View, PaletteBuilderProtocol {
         animation: .default
     )
     private var dynamicPalettes: FetchedResults<ColorScheme>
+    
+    var state: ViewModelState
     let classicPalettes = Palette.classicPalettes()
     let enahncedPalettes = Palette.enhancedPalettes()
     
@@ -97,7 +105,7 @@ struct PalettePicker: View, PaletteBuilderProtocol {
                     .foregroundStyle(.primary)
                     .padding(.trailing, 8)
                 Picker("Cycle Palette Colors", selection: $cyclePalette) {
-                    ForEach(PaletteCycleStyle.allCases, id: \.self) { filter in
+                    ForEach(PaletteCycleStyle.allCases(for: state.fractalModel), id: \.self) { filter in
                         Label(filter.description, systemImage: filter.symbol).tag(filter)
                     }
                 }

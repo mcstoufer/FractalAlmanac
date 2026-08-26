@@ -6,24 +6,25 @@
 //
 
 #include <metal_stdlib>
+#include <SwiftUI/SwiftUI.h>
 #include "DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
 
 [[ stitchable ]] half4 phoenix(float2 position,
-                               half4 currentColor,
-                               float4 centerRealSplit,   // centerReal.hi, centerReal.lo
-                               float4 centerImagSplit,   // centerImag.hi, centerImag.lo
+                               SwiftUI::Layer layer,
+                               float2 centerRealSplit,   // centerReal.hi, centerReal.lo
+                               float2 centerImagSplit,   // centerImag.hi, centerImag.lo
                                float4 scaleSplit,        // dx.hi, dx.lo, dy.hi, dy.lo (Precalculated pixel step size)
-                               float4 cConstantSplit,    // c.hi, c.lo (Phoenix C constant), p.hi, p.lo (Phoenix P parameter)
+                               float2 cConstantSplit,    // c.hi, c.lo (Phoenix C constant), p.hi, p.lo (Phoenix P parameter)
                                float2 size,
-                               float2 tuningData,
+                               float tuningData,
                                float cycle,
                                constant const float *colors,
                                int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t baseIterations = static_cast<uint32_t>(tuningData.x);
+    uint32_t baseIterations = static_cast<uint32_t>(tuningData);
     uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
     
     float offsetX = position.x - (size.x * 0.5f);
@@ -43,8 +44,8 @@ using namespace metal;
     df_float zy = df_add(c_imag_center, df_mul(offset_y_df, dy));
     
     // Extract Phoenix formula constants from cConstantSplit
-    df_float cx = { cConstantSplit.x, cConstantSplit.y }; // Phoenix Real Constant (C)
-    df_float cy = { cConstantSplit.z, cConstantSplit.w }; // Phoenix Feedback Parameter (P)
+    df_float cx = { cConstantSplit.x, 0.0f }; // Phoenix Real Constant (C)
+    df_float cy = { cConstantSplit.y, 0.0f }; // Phoenix Feedback Parameter (P)
     
     // Z_(n-1) track variables initialized to 0
     df_float zx_prev = { 0.0f, 0.0f };

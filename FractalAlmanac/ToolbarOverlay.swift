@@ -118,7 +118,7 @@ struct ToolbarOverlay<Canvas: View>: View {
                 case .model:
                     ModelPicker(modelDelegate: modelDelegate)
                 case .palette:
-                    PalettePicker(paletteDelegate: paletteDelegate)
+                    PalettePicker(state: state, paletteDelegate: paletteDelegate)
                 case .bookmark:
                     BookmarkSheet(
                         bookmarkModel: state.fractalModel,

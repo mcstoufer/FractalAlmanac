@@ -2,7 +2,7 @@
 //  InfoDisplay.swift
 //  FractalAlmanac
 //
-//  Created by Dragon Admin on 6/30/26.
+//  Created by Martin Stoufer on 6/30/26.
 //
 
 import SwiftUI
