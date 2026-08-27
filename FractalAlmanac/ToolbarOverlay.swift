@@ -30,6 +30,7 @@ enum ActiveSheet: Identifiable {
 enum SnapshotState: String {
     case Save = "photo.badge.arrow.down.fill"
     case Success = "checkmark.circle"
+    case Failure = "x.circle"
     
     var tintColor:Color {
         switch self {
@@ -37,6 +38,8 @@ enum SnapshotState: String {
                 return .white
             case .Success:
                 return .green
+            case .Failure:
+                return .red
         }
     }
 }
@@ -164,18 +167,22 @@ struct ToolbarOverlay<Canvas: View>: View {
             caption: "\(state.fractalModel.rawValue): \(state.centerReal), \(state.centerImag)",
             cameraModel: "FractalAlmanac",
             lensInfo: "\(self.state.uniformScale(for: size))") { error in
+                
+                var state: SnapshotState
                 if let error {
                     Logger.compute.error("Failed to save to photo album: \(error.localizedDescription, privacy: .public)")
+                    state = .Failure
                 } else {
+                    state = .Success
+                }
+                withAnimation(.default) {
+                    snapshotState = state
+                    animationTrigger += 1
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     withAnimation(.default) {
-                        snapshotState = .Success
-                        animationTrigger += 1
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                        withAnimation(.default) {
-                            snapshotState = .Save
-                        }
+                        snapshotState = .Save
                     }
                 }
             }
