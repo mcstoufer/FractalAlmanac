@@ -51,7 +51,7 @@ using namespace metal;
     df_float zy_prev = { 0.0f, 0.0f };
     
     uint32_t i = 0;
-    float escapeRadiusSq = 65536.0f;
+    float escapeRadiusSq = 16.0f;
 
     for (; i < maxIterations; i++) {
         df_float zx2 = df_mul(zx, zx);

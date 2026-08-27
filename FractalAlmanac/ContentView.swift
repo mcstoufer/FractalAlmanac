@@ -214,7 +214,7 @@ struct ContentView: View, PaletteProtocol, ModelProtocol, BookmarkProtocol {
                             let currentZoom = state.zoomAnchor * Double(value.magnification)
                             
                             let scaleBefore = (3.0 / Double(canvasSize.width)) / state.zoomAnchor
-                            let scaleNow = (3.0 / Double(canvasSize.width)) / state.baseZoom
+                            let scaleNow = (3.0 / Double(canvasSize.width)) / currentZoom
                             
                             let pinchOffsetX = Double(value.startLocation.x - canvasSize.width / 2.0)
                             let pinchOffsetY = Double(value.startLocation.y - canvasSize.height / 2.0)
