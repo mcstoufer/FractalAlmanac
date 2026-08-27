@@ -7,8 +7,8 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI.h>
-#include "DualFloatShaderUtilities.metal"
-#include "Float2ShaderUtilities.metal"
+#include "Helpers/DualFloatShaderUtilities.metal"
+#include "Helpers/Float2ShaderUtilities.metal"
 
 using namespace metal;
 

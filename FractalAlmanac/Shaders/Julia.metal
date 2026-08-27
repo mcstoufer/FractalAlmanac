@@ -7,9 +7,47 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI.h>
-#include "DualFloatShaderUtilities.metal"
+#include "Helpers/DualFloatShaderUtilities.metal"
 
 using namespace metal;
+
+[[ stitchable ]] half4 juliaFast(float2 position,
+                                 SwiftUI::Layer layer,
+                                 float2 centerRealSplit,
+                                 float2 centerImagSplit,
+                                 float4 scaleSplit,
+                                 float2 cConstantSplit,
+                                 float2 size,
+                                 float tuningData,
+                                 float cycle,
+                                 constant const float *colors,
+                                 int colorsCount) {
+    int totalColors = colorsCount / 4;
+    uint32_t maxIterations = static_cast<uint32_t>(tuningData);
+    float2 offset = position - (size * 0.5f);
+    float2 center = float2(centerRealSplit.x + centerRealSplit.y,
+                          centerImagSplit.x + centerImagSplit.y);
+    float2 scale = float2(scaleSplit.x + scaleSplit.y,
+                         scaleSplit.z + scaleSplit.w);
+    float2 z = center + (offset * scale);
+    float2 c = cConstantSplit;
+    uint32_t i = 0;
+    constexpr float escapeRadiusSq = 16.0f;
+
+    for (; i < maxIterations; i++) {
+        float zx2 = z.x * z.x;
+        float zy2 = z.y * z.y;
+
+        if ((zx2 + zy2) >= escapeRadiusSq) {
+            break;
+        }
+
+        z = float2(zx2 - zy2 + c.x,
+                   2.0f * z.x * z.y + c.y);
+    }
+
+    return smoothable_color_lookup(colors, i, z.x, z.y, maxIterations, totalColors, colorsCount, cycle);
+}
 
 [[ stitchable ]] half4 julia(float2 position,
                              SwiftUI::Layer layer,      // FIX: Changed from half4 to SwiftUI::Layer
@@ -23,8 +61,7 @@ using namespace metal;
                              constant const float *colors,
                              int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t baseIterations = static_cast<uint32_t>(tuningData);
-    uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
+    uint32_t maxIterations = static_cast<uint32_t>(tuningData);
     
     float offsetX = position.x - (size.x * 0.5f);
     float offsetY = position.y - (size.y * 0.5f);
@@ -47,7 +84,7 @@ using namespace metal;
     df_float cy = { cConstantSplit.y, 0.0 };
     
     uint32_t i = 0;
-    float escapeRadiusSq = 65536.0f;
+    float escapeRadiusSq = 16.0;
 
     for (; i < maxIterations; i++) {
         df_float zx2 = df_mul(zx, zx);

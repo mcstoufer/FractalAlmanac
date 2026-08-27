@@ -13,13 +13,6 @@ struct df_float {
     float lo;
 };
 
-inline uint32_t scaled_iterations(uint32_t baseIterations, float4 scaleSplit, float2 size) {
-    float currentScaleWidth = scaleSplit.x * size.x;
-    float zoomDepth = log10(1.0f / max(currentScaleWidth, 1e-7f));
-    float scalingFactor = 250.0f;
-    return static_cast<uint32_t>(clamp(baseIterations + (scalingFactor * zoomDepth), 100.0f, 10000.0f));
-}
-
 inline half4 smoothed_color_lookup(constant float *colors,
                                    float i,
                                    float maxIterations, int totalColors,

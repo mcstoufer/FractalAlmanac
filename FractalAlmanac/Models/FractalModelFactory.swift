@@ -41,6 +41,7 @@ extension FractalModel {
         let dySplit = dy.splitDouble
         let cRealSplit = activeCenterReal.splitDouble
         let cImagSplit = activeCenterImag.splitDouble
+        let tuningData = Float(shaderIterationCount(dx: dx, canvasWidth: canvasSize.width))
         
         let shaderArguments = [
             // Position auto injected by Shader init
@@ -50,7 +51,7 @@ extension FractalModel {
             .float4(dxSplit.hi, dxSplit.lo, dySplit.hi, dySplit.lo), // Step delta sizes
             self.cConstants,
             .float2(Float(canvasSize.width), Float(canvasSize.height)),
-            .float(Float(self.iterationCount)),
+            .float(tuningData),
             .float(cyclePalette.shaderValue),
             .floatArray(activePalette)
             // colorsCount auto injected by Shader init
@@ -65,28 +66,35 @@ extension FractalModel {
                    dx: Double, dy: Double,
                    activeCenterReal: Double,
                    activeCenterImag: Double) -> Shader {
-           
-        let shaderArguments = syntheticShaderArguments(
-            cyclePalette: cyclePalette,
-            activePalette: activePalette,
-            size: canvasSize,
-            dx: dx,
-            dy: dy,
-            activeCenterReal: activeCenterReal,
-            activeCenterImag: activeCenterImag
-            )
-        
         switch self {
             case .Mandelbrot:
-                return Shader(function: ShaderLibrary.mandelbrot, arguments: shaderArguments)
-            case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
-                return Shader(function: ShaderLibrary.julia, arguments: shaderArguments)
-            case .Phoenix, .PhoenixJ, .PhoenixM:
-                return Shader(function: ShaderLibrary.phoenix, arguments: shaderArguments)
-            case .Dragon:
-                return Shader(function: ShaderLibrary.dragon, arguments: shaderArguments)
-            case .SanMarcos:
-                return Shader(function: ShaderLibrary.sanmarcos, arguments: shaderArguments)
+                // Mandelbrot rendering is handled by MetalMandelbrotView's compute pipeline.
+                // This layerEffect path is retained only to satisfy the shared canvas flow.
+                return Shader(function: ShaderLibrary.nullShader, arguments: [])
+            case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO, .Phoenix, .PhoenixJ, .PhoenixM, .Dragon, .SanMarcos:
+                let shaderArguments = syntheticShaderArguments(
+                    cyclePalette: cyclePalette,
+                    activePalette: activePalette,
+                    size: canvasSize,
+                    dx: dx,
+                    dy: dy,
+                    activeCenterReal: activeCenterReal,
+                    activeCenterImag: activeCenterImag
+                )
+                
+                switch self {
+                    case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
+                        let function = usesSinglePrecisionJulia(dx: dx) ? ShaderLibrary.juliaFast : ShaderLibrary.julia
+                        return Shader(function: function, arguments: shaderArguments)
+                    case .Phoenix, .PhoenixJ, .PhoenixM:
+                        return Shader(function: ShaderLibrary.phoenix, arguments: shaderArguments)
+                    case .Dragon:
+                        return Shader(function: ShaderLibrary.dragon, arguments: shaderArguments)
+                    case .SanMarcos:
+                        return Shader(function: ShaderLibrary.sanmarcos, arguments: shaderArguments)
+                    default:
+                        fatalError("Unhandled shader dispatch is handled before synthetic arguments are built.")
+                }
         }
     }
     
@@ -148,6 +156,31 @@ extension FractalModel {
                 return .float2(2.998122, 0.004298)
             default:
                 return .float2(0.0, 0.0)
+        }
+    }
+    
+    private var isJuliaFamily: Bool {
+        switch self {
+            case .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO:
+                return true
+            default:
+                return false
+        }
+    }
+    
+    func usesSinglePrecisionJulia(dx: Double) -> Bool {
+        isJuliaFamily && dx > 1e-7
+    }
+    
+    func shaderIterationCount(dx: Double, canvasWidth: CGFloat) -> Int {
+        switch self {
+            case .Dragon, .JuliaA, .JuliaB, .JuliaC, .JuliaD, .JuliaG, .JuliaH, .JuliaL, .JuliaN, .JuliaO, .Phoenix, .PhoenixJ, .PhoenixM:
+                let currentScaleWidth = dx * Double(canvasWidth)
+                let zoomDepth = log10(1.0 / max(currentScaleWidth, 1e-7))
+                let scalingFactor = 250.0
+                return Int((Double(iterationCount) + (scalingFactor * zoomDepth)).clamped(to: 100.0...10000.0))
+            default:
+                return iterationCount
         }
     }
     

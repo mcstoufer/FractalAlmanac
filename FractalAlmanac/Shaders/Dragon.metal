@@ -7,7 +7,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI.h>
-#include "DualFloatShaderUtilities.metal"
+#include "Helpers/DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
@@ -23,8 +23,7 @@ using namespace metal;
                               constant const float *colors,
                               int colorsCount) {
     int totalColors = colorsCount / 4;
-    uint32_t baseIterations = static_cast<uint32_t>(tuningData);
-    uint32_t maxIterations = scaled_iterations(baseIterations, scaleSplit, size);
+    uint32_t maxIterations = static_cast<uint32_t>(tuningData);
     
     float offsetX = position.x - (size.x * 0.5f);
     float offsetY = position.y - (size.y * 0.5f);

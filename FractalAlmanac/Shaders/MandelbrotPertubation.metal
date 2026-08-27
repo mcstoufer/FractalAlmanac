@@ -6,8 +6,8 @@
 //
 
 #include <metal_stdlib>
-#include "Float2ShaderUtilities.metal"
-#include "DualFloatShaderUtilities.metal"
+#include "Helpers/Float2ShaderUtilities.metal"
+#include "Helpers/DualFloatShaderUtilities.metal"
 
 using namespace metal;
 
